@@ -1,0 +1,32 @@
+{% extends "servicing_base.html" %}
+
+{% block content %}
+<h2>Member Search</h2>
+
+<form class="search-form"
+      hx-post="/servicing/members/search"
+      hx-target="#results-panel"
+      hx-swap="innerHTML"
+      hx-indicator="#loading-overlay">
+    <table class="form-table">
+        <tr>
+            <td><label>Member ID:</label></td>
+            <td><input type="text" name="member_id" id="inp_{{ id_suffix }}"
+                       maxlength="5" pattern="[0-9]{5}"
+                       autocomplete="off"></td>
+            <td><button type="submit">Search</button></td>
+        </tr>
+    </table>
+</form>
+
+<div id="loading-overlay" class="overlay hidden">
+    <div class="spinner">Searching...</div>
+</div>
+
+<div id="results-panel">
+    <!-- Results partial loaded here via HTMX -->
+    {% if error %}
+    <div class="error-banner">{{ error }}</div>
+    {% endif %}
+</div>
+{% endblock %}

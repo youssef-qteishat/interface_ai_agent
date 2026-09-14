@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Credit Union Servicing Portal</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/htmx.min.js"></script>
+</head>
+<body>
+    <div id="app-shell">
+        <header id="top-bar">
+            <div class="logo">Credit Union Servicing Portal</div>
+            <div class="user-info">User: Teller1 | Branch: Main</div>
+        </header>
+        <div id="main-layout">
+            <nav id="side-nav">
+                <ul>
+                    <li><a href="/servicing/members/search" target="servicing-frame">Members</a></li>
+                    <li><a href="/servicing/accounts" target="servicing-frame">Accounts</a></li>
+                    <li><a href="/servicing/reports" target="servicing-frame">Reports</a></li>
+                    <li><a href="/servicing/admin" target="servicing-frame">Admin</a></li>
+                </ul>
+            </nav>
+            <main id="content-area">
+                <iframe name="servicing-frame"
+                        src="/servicing/members/search"
+                        class="servicing-iframe"
+                        title="Servicing Workspace">
+                </iframe>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

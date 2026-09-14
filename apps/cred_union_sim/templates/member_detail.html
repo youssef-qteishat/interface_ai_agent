@@ -1,0 +1,77 @@
+{% extends "servicing_base.html" %} {% block content %}
+<h2>Member Detail — {{ member.member_id }}</h2>
+
+<table class="layout-table">
+  <tr>
+    <!-- Left panel: Identity -->
+    <td class="panel-left">
+      <fieldset>
+        <legend>Identity</legend>
+        <table class="data-table">
+          <tr>
+            <td class="field-label">Name:</td>
+            <td>{{ member.last_name }}, {{ member.first_name[:1] }}.</td>
+          </tr>
+          <tr>
+            <td class="field-label">DOB:</td>
+            <td>**/**/****</td>
+          </tr>
+          <tr>
+            <td class="field-label">Phone:</td>
+            <td>(***) ***-**{{ member.phone[-2:] }}</td>
+          </tr>
+          <tr>
+            <td class="field-label">Email:</td>
+            <td>****@***.com</td>
+          </tr>
+          <tr>
+            <td class="field-label">Status:</td>
+            <td>{{ member.status | capitalize }}</td>
+          </tr>
+        </table>
+        <button class="nav-button" onclick="history.back()">Back</button>
+      </fieldset>
+    </td>
+
+    <!-- Right panel: Existing Accounts -->
+    <td class="panel-right">
+      <fieldset>
+        <legend>Existing Accounts</legend>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Acct No</th>
+              <th>Type</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for acct in accounts %}
+            <tr>
+              <td>{{ acct.account_number }}</td>
+              <td>{{ acct.account_type | capitalize }}</td>
+              <td>${{ "%.2f"|format(acct.balance) }}</td>
+            </tr>
+            {% endfor %} {% if accounts|length == 0 %}
+            <tr>
+              <td colspan="3">No accounts found.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+
+        {% if member.status == 'active' %}
+        <a href="/servicing/accounts/open?member_id={{ member.member_id }}">
+          <button class="action-button">Open Sub-Account</button>
+        </a>
+        {% else %}
+        <div class="warning-banner">
+          Member is {{ member.status }}. Sub-account opening is not available.
+        </div>
+        {% endif %}
+        <button class="nav-button" onclick="history.back()">Back</button>
+      </fieldset>
+    </td>
+  </tr>
+</table>
+{% endblock %}

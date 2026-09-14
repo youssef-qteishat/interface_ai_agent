@@ -1,0 +1,108 @@
+body.servicing-body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    background: #f0f0f0;
+    margin: 0;
+    padding: 8px;
+}
+
+h2 { font-size: 16px; margin: 0 0 10px 0; }
+h3 { font-size: 14px; margin: 0 0 8px 0; }
+
+table.data-table, table.form-table, table.layout-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table.data-table th, table.data-table td,
+table.form-table td, table.layout-table td {
+    border: 1px solid #999;
+    padding: 4px 8px;
+}
+
+table.data-table th {
+    background: #2d7a3e;
+    color: white;
+    text-align: left;
+}
+
+.field-label {
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.action-button, .nav-button, .danger-button {
+    padding: 4px 16px;
+    border: 1px solid #666;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.action-button { background: #e0e0e0; }
+.nav-button { background: #d0d0d0; }
+.danger-button { background: #dc3545; color: white; font-weight: bold; }
+
+.icon-only-button {
+    border: 1px solid #999;
+    background: #e8e8e8;
+    padding: 2px;
+    cursor: pointer;
+}
+
+.overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.overlay.hidden { display: none; }
+
+.warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    padding: 8px 12px;
+    margin: 10px 0;
+}
+
+.warning-banner {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    padding: 6px 10px;
+    color: #856404;
+}
+
+.error-banner {
+    background: #f8d7da;
+    border: 1px solid #dc3545;
+    padding: 6px 10px;
+    color: #721c24;
+}
+
+.info-banner {
+    background: #d1ecf1;
+    border: 1px solid #17a2b8;
+    padding: 6px 10px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.modal-box {
+    background: white;
+    border: 2px solid #666;
+    padding: 16px 24px;
+    min-width: 300px;
+    text-align: center;
+}

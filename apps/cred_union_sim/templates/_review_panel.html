@@ -1,0 +1,45 @@
+<div id="review-container">
+  <h3>Review New Account</h3>
+
+  <table class="review-table">
+    <tr>
+      <td class="field-label">Member:</td>
+      <td>{{ member.member_id }}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Account Type:</td>
+      <td>{{ account_type | capitalize }}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Opening Amount:</td>
+      <td>${{ "%.2f"|format(opening_amount) }}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Funding Source:</td>
+      <td>{{ funding_acct.account_number }}</td>
+    </tr>
+  </table>
+
+  <div class="warning-box">
+    ⚠ WARNING: This action will open a new account. Verify all details before
+    proceeding. This cannot be undone.
+  </div>
+
+  <div class="review-actions">
+    <button
+      class="nav-button"
+      onclick="window.location='/servicing/accounts/open?member_id={{ member.member_id }}'"
+    >
+      Edit
+    </button>
+
+    <form
+      hx-post="/servicing/accounts/open/finalize"
+      hx-target="#review-container"
+      hx-swap="innerHTML"
+    >
+      <input type="hidden" name="app_id" value="{{ app.app_id }}" />
+      <button type="submit" class="danger-button">Open Account</button>
+    </form>
+  </div>
+</div>

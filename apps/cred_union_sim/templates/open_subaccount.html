@@ -1,0 +1,98 @@
+{% extends "servicing_base.html" %} {% block content %}
+<h2>Open Sub-Account</h2>
+
+<div class="form-container">
+  <form
+    id="open-account-form"
+    hx-post="/servicing/accounts/open/submit"
+    hx-target="#review-panel"
+    hx-swap="innerHTML"
+    hx-indicator="#form-loading"
+  >
+    <input type="hidden" name="member_id" value="{{ member.member_id }}" />
+
+    <table class="form-table">
+      <tr>
+        <td class="field-label"><label>Account Type:</label></td>
+        <td>
+          <select name="account_type" id="sel_{{ suffix }}">
+            <option value="savings">Savings</option>
+            <option value="checking">Checking</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td class="field-label"><label>Opening Amount:</label></td>
+        <td>
+          <input
+            type="text"
+            name="opening_amount"
+            id="amt_{{ suffix }}"
+            placeholder="$0.00"
+            pattern="^\d+\.\d{2}$"
+          />
+        </td>
+      </tr>
+      <tr>
+        <td class="field-label"><label>Funding Source:</label></td>
+        <td>
+          <select name="funding_account_id" id="fund_{{ suffix }}">
+            {% for acct in accounts %}
+            <option value="{{ acct.account_id }}">
+              {{ acct.account_number }} ({{ acct.account_type | capitalize }})
+            </option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              name="disclosure_accepted"
+              id="chk_{{ suffix }}"
+              value="1"
+            />
+            I have reviewed the account disclosure and agree to the terms.
+          </label>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <button
+            type="button"
+            class="nav-button"
+            onclick="window.location='/servicing/members/{{ member.member_id }}'"
+          >
+            Back
+          </button>
+        </td>
+        <td class="right-align">
+          <button type="submit" class="action-button">Continue</button>
+        </td>
+      </tr>
+    </table>
+  </form>
+
+  <!-- Icon-only refresh button: no visible text, no aria-label -->
+  <button
+    class="icon-only-button"
+    id="icon_{{ suffix }}"
+    hx-get="/servicing/accounts/open?member_id={{ member.member_id }}"
+    hx-target="body"
+    hx-swap="outerHTML"
+    title=""
+  >
+    <img src="/static/icons/refresh.png" alt="" />
+  </button>
+
+  <div id="form-loading" class="overlay hidden">
+    <div class="spinner">Processing...</div>
+  </div>
+
+  <div id="review-panel">
+    <!-- Review partial loaded here after form submission -->
+  </div>
+</div>
+{% endblock %}

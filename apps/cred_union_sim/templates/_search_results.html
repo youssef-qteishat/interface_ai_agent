@@ -1,0 +1,27 @@
+{% if members %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Member</th>
+            <th>Name</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in members %}
+        <tr class="member-row"
+            hx-get="/servicing/members/{{ m.member_id }}"
+            hx-target="body"
+            hx-swap="outerHTML"
+            onclick="window.location='/servicing/members/{{ m.member_id }}'">
+            <td>{{ m.member_id }}</td>
+            <td>{{ m.last_name }}, {{ m.first_name[:1] }}.</td>
+            <td>{{ m.status | capitalize }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p class="hint">Click a row to view member details.</p>
+{% else %}
+<div class="info-banner">No members found. Check the Member ID and try again.</div>
+{% endif %}

@@ -1,0 +1,28 @@
+<h3>Account Opened</h3>
+
+<table class="review-table">
+  <tr>
+    <td class="field-label">Confirmation #:</td>
+    <td>{{ app.app_id }}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Member:</td>
+    <td>{{ member.member_id }}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Account Type:</td>
+    <td>{{ app.requested_type | capitalize }}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Opening Amount:</td>
+    <td>${{ "%.2f"|format(app.opening_amount) }}</td>
+  </tr>
+  <tr>
+    <td class="field-label">Funding Source:</td>
+    <td>{{ funding_acct.account_number }}</td>
+  </tr>
+</table>
+
+<div class="info-banner">
+  Account opened successfully.
+</div>
