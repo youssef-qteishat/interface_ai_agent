@@ -1,4 +1,9 @@
 <div id="review-container">
+  {% if fault.session_warning %}
+  <div class="warning-banner">
+    Your session will expire in 5 minutes. Please save your work.
+  </div>
+  {% endif %}
   <h3>Review New Account</h3>
 
   <table class="review-table">

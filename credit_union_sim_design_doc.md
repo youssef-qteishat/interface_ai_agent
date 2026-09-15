@@ -1453,7 +1453,7 @@ Each step is scoped so it can be delegated to Claude Code or done manually. Step
 **Owner:** Claude Code or manual
 **Estimated time:** 20 minutes
 
-- [ ] Modify `_review_panel.html` to conditionally render a "Session Expiring" warning banner when `fault.session_warning == 1`
+- [ ] Modify `_review_panel.html` to conditionally render a "Session Expiring" warning banner when `fault.session_warning == 1` (Section 7.4)
 - [ ] The warning says "Your session will expire in 5 minutes. Please save your work."
 - [ ] This is a different visual from the unexpected dialog — it's a banner, not a modal
 - [ ] Test with `session` profile active
@@ -1470,7 +1470,7 @@ Each step is scoped so it can be delegated to Claude Code or done manually. Step
 - [ ] Create `apps/bank_sim/static/servicing_tenant_b.css` (Section 8.1):
   - Green header (`#2d7a3e`) instead of blue (`#336699`)
   - Logo text changes handled in Jinja
-- [ ] Modify `servicing_base.html` to conditionally load the Tenant B CSS:
+- [ ] Modify `servicing_base.html` to conditionally load the Tenant B CSS (Section 7.5):
   ```html
   {% if tenant_theme == 'tenant_b' %}
   <link rel="stylesheet" href="/static/servicing_tenant_b.css" />

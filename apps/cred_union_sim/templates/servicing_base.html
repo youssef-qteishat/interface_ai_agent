@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+    {% if tenant_theme == 'tenant_b' %}
+    <link rel="stylesheet" href="/static/servicing_tenant_b.css">
+    {% else %}
     <link rel="stylesheet" href="/static/servicing.css">
+    {% endif %}
     <script src="/static/htmx.min.js"></script>
 </head>
 <body class="servicing-body">

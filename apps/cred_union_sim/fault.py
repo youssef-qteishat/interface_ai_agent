@@ -34,7 +34,11 @@ def get_active_fault_profile() -> FaultProfile:
     return _row_to_profile(row)
 
 
+_PROFILE_NAME_ALIASES = {"tenantb": "tenant_b"}
+
+
 def set_fault_profile(name: str) -> FaultProfile:
+    name = _PROFILE_NAME_ALIASES.get(name, name)
     conn = db.get_connection()
     row = conn.execute(
         "SELECT * FROM fault_profiles WHERE name = ?", (name,)

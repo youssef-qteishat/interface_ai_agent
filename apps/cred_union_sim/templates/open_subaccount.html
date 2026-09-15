@@ -63,13 +63,13 @@
           <button
             type="button"
             class="nav-button"
-            onclick="window.location='/servicing/members/{{ member.member_id }}'"
+            onclick="history.back()"
           >
             Back
           </button>
         </td>
         <td class="right-align">
-          <button type="submit" class="action-button">Continue</button>
+          <button type="submit" class="action-button">{% if tenant_theme == 'tenant_b' %}Proceed{% else %}Continue{% endif %}</button>
         </td>
       </tr>
     </table>
@@ -87,7 +87,7 @@
     <img src="/static/icons/refresh.png" alt="" />
   </button>
 
-  <div id="form-loading" class="overlay hidden">
+  <div id="form-loading" class="overlay htmx-indicator">
     <div class="spinner">Processing...</div>
   </div>
 

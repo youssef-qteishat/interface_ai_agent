@@ -104,6 +104,14 @@ def get_subaccount_app(app_id: str) -> dict | None:
     return _row_to_dict(row)
 
 
+def list_audit_log(limit: int = 50) -> list[dict]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ?", (limit,)
+    ).fetchall()
+    return [_row_to_dict(row) for row in rows]
+
+
 def log_audit(member_id: str | None, action: str, details: dict | None = None) -> None:
     conn = get_connection()
     event_id = "evt_" + secrets.token_hex(6)

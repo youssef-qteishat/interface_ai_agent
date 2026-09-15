@@ -8,7 +8,7 @@
 <body>
     <div id="app-shell">
         <header id="top-bar">
-            <div class="logo">Credit Union Servicing Portal</div>
+            <div class="logo">{% if tenant_theme == 'tenant_b' %}Community CU Portal{% else %}Credit Union Servicing Portal{% endif %}</div>
             <div class="user-info">User: Teller1 | Branch: Main</div>
         </header>
         <div id="main-layout">

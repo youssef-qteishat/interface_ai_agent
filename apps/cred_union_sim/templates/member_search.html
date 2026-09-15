@@ -12,6 +12,7 @@
         <tr>
             <td><label>Member ID:</label></td>
             <td><input type="text" name="member_id" id="inp_{{ id_suffix }}"
+                       value="{{ member_id or '' }}"
                        maxlength="5" pattern="[0-9]{5}"
                        autocomplete="off"></td>
             <td><button type="submit">Search</button></td>
@@ -19,13 +20,15 @@
     </table>
 </form>
 
-<div id="loading-overlay" class="overlay hidden">
+<div id="loading-overlay" class="overlay htmx-indicator">
     <div class="spinner">Searching...</div>
 </div>
 
 <div id="results-panel">
     <!-- Results partial loaded here via HTMX -->
-    {% if error %}
+    {% if member_id %}
+    {% include "_search_results.html" %}
+    {% elif error %}
     <div class="error-banner">{{ error }}</div>
     {% endif %}
 </div>

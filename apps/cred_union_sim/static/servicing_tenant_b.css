@@ -62,6 +62,20 @@ table.data-table th {
 
 .overlay.hidden { display: none; }
 
+.htmx-indicator {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 200ms ease-in, visibility 0s 200ms;
+}
+.htmx-request.htmx-indicator,
+.htmx-request .htmx-indicator {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 200ms ease-in, visibility 0s;
+}
+
 .warning-box {
     background: #fff3cd;
     border: 1px solid #ffc107;

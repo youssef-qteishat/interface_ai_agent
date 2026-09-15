@@ -29,7 +29,7 @@
             <td>{{ member.status | capitalize }}</td>
           </tr>
         </table>
-        <button class="nav-button" onclick="history.back()">Back</button>
+        <button class="nav-button" onclick="window.location='/servicing/members/search?member_id={{ member.member_id }}'">Back</button>
       </fieldset>
     </td>
 
@@ -69,7 +69,7 @@
           Member is {{ member.status }}. Sub-account opening is not available.
         </div>
         {% endif %}
-        <button class="nav-button" onclick="history.back()">Back</button>
+        <button class="nav-button" onclick="window.location='/servicing/members/search?member_id={{ member.member_id }}'">Back</button>
       </fieldset>
     </td>
   </tr>
