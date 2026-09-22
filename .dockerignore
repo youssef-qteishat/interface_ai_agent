@@ -1,0 +1,26 @@
+# The build context is the repo root, so keep it small: everything here stays out of
+# the daemon transfer and out of the images.
+
+.git
+.gitignore
+.claude
+
+# Secrets never enter an image.
+.env
+.env.*
+
+# Python artifacts
+.venv
+**/__pycache__
+*.pyc
+*.pyo
+
+# Planning docs and deliverables — not needed to run the simulator.
+*.md
+evidence/
+artifacts/
+
+# The orchestrator and the sandbox build separately; the sim image must not carry them.
+src/
+sandbox/
+tests/

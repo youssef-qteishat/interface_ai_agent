@@ -1,2 +1,8 @@
 **/__pycache__/
 *.pyc
+
+# Real secrets: never committed.
+.env
+.env.*
+# ...but the placeholder template IS committed, so a fresh clone knows what to set.
+!.env.example

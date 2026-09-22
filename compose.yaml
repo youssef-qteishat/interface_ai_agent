@@ -1,0 +1,47 @@
+# Topology for the discovery-loop layer (discovery-loop-plan.md §2).
+#
+#   bank-sim  — the target application. Reachable from the sandbox as http://bank-sim:8001,
+#               which is the exact hostname the capability artifact's allowed_origins declares.
+#   sandbox   — added in Step 2: Xvfb + Chromium + VNC + the surface agent. It joins
+#               sandbox_net ONLY, so the browser the agent drives has no internet access.
+#
+# The orchestrator (src/) is NOT a service here. It runs on the host and reaches the
+# sandbox over a published loopback port.
+
+name: interface-ai
+
+services:
+  bank-sim:
+    build:
+      context: .
+      dockerfile: apps/cred_union_sim/Dockerfile
+    # Two networks on purpose: sandbox_net carries agent traffic, host_net makes the
+    # published port work so /dev/* fault switching stays a host-only capability.
+    networks: [sandbox_net, host_net]
+    # Loopback-bound: never exposed on the LAN.
+    ports: ["127.0.0.1:8001:8001"]
+    environment:
+      CRED_UNION_SIM_DB: ":memory:"
+      PYTHONUNBUFFERED: "1"
+    # python, not curl — python:3.12-slim ships no curl. Lets Step 2 use
+    # depends_on: {bank-sim: {condition: service_healthy}} so Chromium never
+    # launches against a sim that isn't listening yet.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/servicing/members/search', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  # internal: true means no egress and no route to the host — the safety property the
+  # report claims. Verified in §0.6 before anything depended on it.
+  sandbox_net:
+    internal: true
+  host_net: {}
