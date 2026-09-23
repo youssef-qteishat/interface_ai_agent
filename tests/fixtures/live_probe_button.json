@@ -1,0 +1,66 @@
+{
+    "coordinate": [
+        1070,
+        96
+    ],
+    "frame_path": [
+        "servicing-frame"
+    ],
+    "role": "button",
+    "role_source": "ax_tree",
+    "accessible_name": "Search",
+    "accessible_name_source": "visible_text",
+    "tag": "button",
+    "hit_tag": "button",
+    "retargeted_from": null,
+    "role_hint": "button",
+    "name_hint": "Search",
+    "type": "submit",
+    "name_attr": null,
+    "dom_id": null,
+    "dom_id_stability": null,
+    "visible_text": "Search",
+    "nearby_label": "Member ID",
+    "placeholder": null,
+    "title": null,
+    "value": "",
+    "disabled": false,
+    "visible": true,
+    "enclosing_region": "form",
+    "enclosing_region_label": null,
+    "classes": [],
+    "rect": {
+        "x": 870,
+        "y": 42,
+        "width": 62,
+        "height": 21
+    },
+    "candidates": [
+        {
+            "kind": "role",
+            "role": "button",
+            "name": "Search",
+            "name_source": "visible_text",
+            "match_count": 1
+        },
+        {
+            "kind": "text",
+            "tag": "button",
+            "text": "Search",
+            "match_count": 1
+        },
+        {
+            "kind": "contextual_text",
+            "anchor": "Member ID",
+            "relative": "button",
+            "match_count": 1
+        },
+        {
+            "kind": "css",
+            "selector": "table.form-table > tbody > tr > td:nth-of-type(3) > button",
+            "match_count": 1,
+            "stability": "unverified"
+        }
+    ],
+    "element_fingerprint": "sha256:a91c29b86a6d8131af8b9b65a168fbbbb5d73772e98a57a81e107a1e92429b0f"
+}

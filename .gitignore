@@ -1,8 +1,21 @@
 **/__pycache__/
 *.pyc
 
+**/.pytest_cache/
+
 # Real secrets: never committed.
 .env
 .env.*
 # ...but the placeholder template IS committed, so a fresh clone knows what to set.
 !.env.example
+
+.DS_Store
+
+# Model-free smoke-test output: a development aid, not the committed deliverable.
+evidence/drive/
+
+evidence/run_*/
+
+docker-compose.override.yml
+
+*.log

@@ -20,6 +20,22 @@ dependencies = [
 ]
 
 
+[tool.poetry]
+# This repo is an application, not a distributable package: `apps/`, `src/` and
+# `sandbox/` are plain directories with no importable root module. Poetry manages
+# dependencies only. (The Step 1 Dockerfile expresses the same fact as --no-root.)
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0"
+
+[tool.pytest.ini_options]
+# The project is not installed as a package (the sim and the orchestrator are just
+# directories), so put the repo root on sys.path for `import src.domain...`.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

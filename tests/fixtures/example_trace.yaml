@@ -1,0 +1,105 @@
+# A hand-written trace in the shape §7 documents, used to prove the models accept the
+# contract as written (not merely as the code happens to emit it). Two steps on
+# purpose: one click with a full probe, one step on a surface with no probe at all.
+schema_version: "1.0.0"
+run_id: "run_20260917_141230_a3f1"
+goal: "Find member 12345 and prepare a savings sub-account, opening amount 25.00; stop at review"
+surface_kind: "web"
+target: "http://bank-sim:8001/"
+display:
+  width: 1280
+  height: 800
+  scale_sent_to_model: 1.0
+provider:
+  name: "anthropic"
+  model: "claude-opus-5"
+  tool: "computer_toolset_20260801"
+fault_profile: "default"
+started_at: "2026-09-17T14:12:30Z"
+ended_at: "2026-09-17T14:14:02Z"
+steps:
+  - index: 7
+    actor: "automation"
+    action: { kind: "left_click", coordinate: [914, 706] }
+    policy:
+      decision: "allow"
+      risk: "reversible"
+      rule: "action_allowlist"
+    observation_before:
+      main_frame_url: "http://bank-sim:8001/"
+      frames:
+        - path: ["servicing-frame"]
+          url: "http://bank-sim:8001/servicing/accounts/open?member_id=12345"
+      dialogs: []
+      screenshot: "steps/007-before.png"
+      observation_hash: "sha256:9c1f"
+      dom_hash: "sha256:5ab2"
+    probe:
+      coordinate: [914, 706]
+      frame_path: ["servicing-frame"]
+      role: "button"
+      role_source: "ax_tree"
+      accessible_name: "Continue"
+      accessible_name_source: "visible_text"
+      tag: "button"
+      hit_tag: "button"
+      visible_text: "Continue"
+      nearby_label: null
+      enclosing_region: "form#open-account-form"
+      classes: ["action-button"]
+      rect: { x: 650, y: 700, width: 90, height: 24 }
+      candidates:
+        - kind: "role"
+          role: "button"
+          name: "Continue"
+          name_source: "visible_text"
+          match_count: 1
+        - kind: "contextual_text"
+          anchor: "Opening Amount"
+          relative: "button"
+          match_count: 1
+        - kind: "css"
+          selector: "#open-account-form button.action-button"
+          match_count: 1
+          stability: "unverified"
+      element_fingerprint: "sha256:1b7e"
+    observation_after:
+      main_frame_url: "http://bank-sim:8001/"
+      frames:
+        - path: ["servicing-frame"]
+          url: "http://bank-sim:8001/servicing/accounts/open?member_id=12345"
+      screenshot: "steps/007-after.png"
+      dom_hash: "sha256:77c0"
+      dom_changed: true
+      new_text: ["Review New Account", "Opening Amount", "$25.00"]
+    timing: { dispatched_ms: 31, settled_ms: 412 }
+    model_reason: "Submit the sub-account form to reach the review screen"
+
+  # A surface with no accessibility backend still produces a valid trace — it just
+  # cannot be canonicalized into a web capability (§7 rule 3).
+  - index: 8
+    actor: "automation"
+    action: { kind: "left_click", coordinate: [120, 240] }
+    policy:
+      decision: "allow"
+      risk: "reversible"
+      rule: "action_allowlist"
+    probe: null
+    probe_unavailable: "no_accessibility_backend"
+    timing: { dispatched_ms: 12, settled_ms: 130 }
+
+outcome:
+  status: "success"
+  run_id: "run_20260917_141230_a3f1"
+  stop_reason: "CHECKPOINT_VERIFIED"
+  steps_used: 11
+  checkpoint_verified: true
+  outputs:
+    account_type: "savings"
+    opening_amount: "25.00"
+budget:
+  max_steps: 40
+  wall_clock_s: 300
+  input_tokens: 184203
+  output_tokens: 6120
+  usd_estimate: 1.07

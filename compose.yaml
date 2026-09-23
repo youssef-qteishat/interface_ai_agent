@@ -2,11 +2,17 @@
 #
 #   bank-sim  — the target application. Reachable from the sandbox as http://bank-sim:8001,
 #               which is the exact hostname the capability artifact's allowed_origins declares.
-#   sandbox   — added in Step 2: Xvfb + Chromium + VNC + the surface agent. It joins
-#               sandbox_net ONLY, so the browser the agent drives has no internet access.
+#   sandbox   — Xvfb + Chromium + VNC + the surface agent. It joins sandbox_net ONLY,
+#               so the browser the agent drives has no internet access.
+#   relay     — socat port-forwarder, the one bridge between host and sandbox_net.
+#               Needed because Docker DROPS published ports for a container attached
+#               only to an internal network: the host binding is silently not created
+#               (verified — `docker ps` shows a bare "8899/tcp" with no host address).
+#               The relay sits on both networks and forwards inbound only, so the
+#               sandbox keeps its no-egress property intact.
 #
 # The orchestrator (src/) is NOT a service here. It runs on the host and reaches the
-# sandbox over a published loopback port.
+# sandbox through the relay's published loopback ports.
 
 name: interface-ai
 
@@ -38,6 +44,66 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  sandbox:
+    # Named explicitly so the relay service can share this exact image.
+    image: interface-ai-sandbox
+    build:
+      # ./sandbox, NOT the repo root: the root .dockerignore excludes sandbox/, and a
+      # scoped context means editing a plan doc never invalidates this image's cache.
+      context: ./sandbox
+    # Only the internal network: the browser under automation has no route out.
+    # Consequence: no ports can be published here — the relay does that.
+    networks: [sandbox_net]
+    # Chromium crashes on the default 64 MB /dev/shm. Preferred over
+    # --disable-dev-shm-usage, which trades the crash for slower rendering.
+    shm_size: "1gb"
+    # tini as PID 1, to reap the entrypoint's background children.
+    init: true
+    environment:
+      TARGET_URL: "http://bank-sim:8001/"
+      SCREEN_GEOMETRY: "1280x800x24"
+    volumes:
+      # DEVELOPMENT ONLY (plan §0.5): edit sandbox/*.py or probe.js, then
+      # `docker compose restart sandbox` — no rebuild. Remove this mount before
+      # capturing Step 14 evidence so the image is self-contained.
+      - ./sandbox:/opt/sandbox:ro
+    depends_on:
+      # Wait for listening, not just started, so Chromium never opens on a dead port.
+      bank-sim: { condition: service_healthy }
+    healthcheck:
+      # /health covers all three layers at once: it reports display geometry (X is
+      # up), pgreps chromium, and calls CDP — so a green container means the agent
+      # can actually see, act and probe.
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8900/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  relay:
+    # Same image as the sandbox — it already carries socat, so no extra build or pull.
+    # Declaring the same image + build as the sandbox service means compose builds it
+    # once and both services share the tag (without `build`, compose would try to pull
+    # `interface-ai-sandbox` from Docker Hub and fail).
+    image: interface-ai-sandbox
+    build:
+      context: ./sandbox
+    # The desktop entrypoint is overridden; this container runs socat and nothing else.
+    # bash, not sh: `wait -n` is a bash builtin and dash does not have it.
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        socat TCP-LISTEN:6080,fork,reuseaddr TCP:sandbox:6080 &
+        socat TCP-LISTEN:8900,fork,reuseaddr TCP:sandbox:8900 &
+        wait -n
+    networks: [sandbox_net, host_net]
+    ports:
+      - "127.0.0.1:6080:6080" # noVNC — watch the run, take over the session
+      - "127.0.0.1:8900:8900" # surface agent (Step 3)
+    depends_on:
+      sandbox: { condition: service_healthy }
 
 networks:
   # internal: true means no egress and no route to the host — the safety property the

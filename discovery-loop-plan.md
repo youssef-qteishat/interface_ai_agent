@@ -228,10 +228,16 @@ macOS host
 │     calls the Anthropic Messages API            │
 │                                                 │
 └── Docker Compose                                │
-      ├── sandbox      (hands + eyes)  ◄──────────┘  127.0.0.1:8900 surface agent
-      │     Xvfb :99 @ 1280x800                      127.0.0.1:6080 noVNC (human window)
-      │     Chromium --app=http://bank-sim:8001/
-      │     x11vnc + noVNC, xdotool, scrot
+      ├── relay        (socat)  ◄──────────────────┘  127.0.0.1:8900 surface agent
+      │     on sandbox_net + host_net                 127.0.0.1:6080 noVNC (human window)
+      │     forwards INBOUND only, so the sandbox keeps its no-egress property
+      │     exists because Docker publishes NO ports for an internal-only container
+      │          │ 6080 / 8900 over sandbox_net
+      │          ▼
+      ├── sandbox      (hands + eyes)   internal-only: no published ports, no egress
+      │     Xvfb :99 @ 1280x800, openbox
+      │     Chromium --kiosk --app=http://bank-sim:8001/  (non-root + --no-sandbox)
+      │     x11vnc (loopback 5900) + noVNC, xdotool, scrot
       │     surface_agent.py  (screenshot / act / probe)
       │     Chromium CDP on localhost:9222 (container-internal, read-only)
       │
@@ -388,17 +394,25 @@ steps:
             url: "http://bank-sim:8001/servicing/accounts/open?member_id=12345",
           }
       dialogs: []
+      visible_text: "…flattened text of every frame, what the checkpoint reads…"
       screenshot: "evidence/run_.../steps/007-before.png"
-      observation_hash: "sha256:9c1f..."
+      observation_hash: "sha256:9c1f..." # screenshot digest — pixels changed
+      dom_hash: "sha256:5ab2..." # visible-text digest — content changed
     probe: # read-only, captured at the click point
       frame_path: ["servicing-frame"]
       tag: "button"
+      hit_tag: "button" # what the coordinate literally hit...
+      retargeted_from: null # ...and the child it was retargeted from, if any
       role: "button"
+      role_source: "ax_tree" # or "retargeted_element"
       accessible_name: "Continue"
+      accessible_name_source: "visible_text" # "placeholder" means DO NOT trust it
       visible_text: "Continue"
       nearby_label: null
-      enclosing_region: "form#open-subaccount-form_8a3f"
-      candidates: # ordered, each with its match count
+      dom_id: null
+      dom_id_stability: null # "generated" explains why no id locator was offered
+      enclosing_region: "form#open-account-form"
+      candidates: # ordered, each with its match count (null = not counted, NOT zero)
         - { kind: "role", role: "button", name: "Continue", match_count: 2 }
         - {
             kind: "contextual_text",
@@ -446,7 +460,17 @@ Three rules that make this trace worth having:
    target comes from `probe.candidates`.
 3. **The probe is optional by contract.** On a surface with no probe (the Tkinter mock), steps carry
    `probe: null` and the trace is still valid — it just can't be canonicalized into a web capability.
-   That is precisely the point the cross-surface argument needs.
+   That is precisely the point the cross-surface argument needs. Step 4 enforces this as a type: a
+   null probe requires a sibling `probe_unavailable` reason, and the two are mutually exclusive.
+4. **`match_count: null` is not `0`.** Null means nobody counted; zero means nothing matched. Only the
+   second is a reason to reject a locator, and conflating them would let the canonicalizer silently
+   discard good candidates.
+
+**Amended in Step 4** (per §12.5) to match what the surface agent actually emits: the probe fields
+`hit_tag`, `retargeted_from`, `role_source`, `accessible_name_source`, `dom_id`/`dom_id_stability`,
+plus `visible_text` and `dom_hash` on observations. The first version of `Observation` was modelled on
+this sketch and was missing `visible_text` — caught only by validating a live payload, which is why
+Step 4's verification ends with exactly that check.
 
 ---
 
@@ -517,24 +541,45 @@ Each step is independently verifiable. Times assume Claude Code does the typing 
 
 **Owner:** Claude Code · **Time:** 2–3 h (expect image-build iteration; this is the step most likely to overrun)
 
-- [ ] `sandbox/Dockerfile` on `debian:bookworm-slim` with: `xvfb`, `x11vnc`, `novnc`,
-      `websockify`, `chromium`, `xdotool`, `scrot`, `imagemagick`, `python3`, `python3-pip`,
+- [x] `sandbox/Dockerfile` on `debian:bookworm-slim` with: `xvfb`, `x11vnc`, `novnc`,
+      `websockify`, `chromium`, `xdotool`, `scrot`, `python3`, `python3-venv`,
       `python3-tk` (free now; avoids a rebuild when the desktop mock arrives), `fonts-dejavu`.
-- [ ] `sandbox/entrypoint.sh`: start `Xvfb :99 -screen 0 1280x800x24`, wait for the display, start
-      `x11vnc -display :99 -forever -shared -nopw`, start `websockify`/noVNC on 6080, launch
-      `chromium --app="$TARGET_URL" --window-size=1280,800 --window-position=0,0
-  --remote-debugging-port=9222 --remote-allow-origins=* --no-first-run --no-default-browser-check
-  --disable-features=Translate,DefaultBrowserSettingEnabled --password-store=basic`,
-      then exec the surface agent.
-- [ ] Add the `sandbox` service to `compose.yaml`: `networks: [sandbox_net]` only (no `host_net` →
-      no internet), `ports: ["127.0.0.1:8900:8900", "127.0.0.1:6080:6080"]`, `shm_size: 1gb`
-      (Chromium crashes on the 64 MB default), `TARGET_URL=http://bank-sim:8001/`,
-      `depends_on: [bank-sim]`.
-- [ ] Chromium must run as a non-root user or with `--no-sandbox`; prefer a non-root user.
+      **Deviations:** `openbox` added (a WM is what makes kiosk geometry and keyboard focus
+      deterministic — without one, X falls back to PointerRoot focus and typed keys follow the
+      pointer); `x11-utils`, `procps`, `curl`, `ca-certificates`, `socat` added (readiness gates,
+      `pgrep` for the healthcheck, and the relay below); `imagemagick` **dropped** in favour of
+      Pillow, which the `zoom` member needs for programmatic crop/resize anyway — saves ~100 MB.
+      Also builds `/opt/agent-venv` with `fastapi`, `uvicorn`, `pillow`, `websockets` so Step 3 is
+      code-only (bookworm enforces PEP 668, so a venv is required regardless). Image: 1.21 GB.
+- [x] `sandbox/entrypoint.sh`: as sketched, plus `openbox --sm-disable`, `--kiosk`, and
+      `x11vnc -localhost` (5900 is never published; noVNC is the only way in). Readiness is **polled,
+      not slept for** — `xdpyinfo` gates Xvfb, and `/json/version` gates Chromium's CDP. Ends with
+      `wait -n`, so the first supervised process to die takes the container down and the failure is
+      visible in `docker compose ps` rather than leaving a healthy-looking box with a dead browser.
+      `--log-level=3` keeps the log readable (no system D-Bus in the container ⇒ endless dbus/upower
+      ERRORs); drop it temporarily when debugging Chromium itself.
+- [x] Add the `sandbox` service to `compose.yaml` — `networks: [sandbox_net]` only, `shm_size: 1gb`,
+      `init: true`, `TARGET_URL=http://bank-sim:8001/`, `depends_on: {bank-sim: service_healthy}`.
+      **Topology correction, verified experimentally (Step 2.0):** a container attached *only* to an
+      `internal: true` network **cannot publish ports** — Docker silently creates no host binding at
+      all (`docker ps` shows a bare `8899/tcp`). So the published ports moved to a third service,
+      `relay`, which sits on both networks and `socat`-forwards 6080/8900 inbound to the sandbox. It
+      reuses the sandbox image (already has `socat`), so there is no extra build or pull. The sandbox
+      stays internal-only and its no-egress property is intact — re-verified after the change.
+- [x] Chromium runs as **non-root uid 10001 _and_ with `--no-sandbox`** — not "either/or" as written
+      here. Docker's default seccomp profile blocks the unprivileged user namespaces Chromium's zygote
+      sandbox needs, so it cannot initialize whatever user it runs as; the fixes that would let it
+      (`seccomp=unconfined`, `cap_add: SYS_ADMIN`) weaken the container boundary far more than
+      disabling Chromium's inner one. Containment = non-root + no egress + the policy engine.
 
-**Verification:** `docker compose up`, open `http://localhost:6080/vnc.html` in your Mac browser and
-see the servicing portal, iframe and all, at 1280x800 with no address bar. Click around by hand —
-this is also your human-handoff window later.
+**Verification (all passed):** noVNC at `http://localhost:6080/vnc.html` shows the servicing portal,
+iframe and all, at exactly 1280x800 with no chrome — confirmed by a captured screenshot, not just by
+eye. `xdotool getdisplaygeometry` → `1280 800`; `scrot` → a 1280x800 PNG; CDP answers and
+`Page.getFrameTree` returns `(main) → servicing-frame`, exactly the `frame_path` §7's trace expects;
+`https://example.com` fails from the sandbox while `http://bank-sim:8001/` succeeds; port 5900 is not
+published; `uid=10001`; `dpkg --print-architecture` → `arm64`; the Step 3 runtime imports; killing
+Chromium exits the container with the intended log line. Memory: sandbox ~236 MB, relay ~2 MB,
+bank-sim ~45 MB of the 4 GB VM.
 
 ---
 
@@ -546,10 +591,14 @@ this is also your human-handoff window later.
 `127.0.0.1` on the host). Four endpoints, deliberately dumb: it executes primitives and reports state.
 **No policy, no model, no loop logic lives here.**
 
-- [ ] `GET /health` → display size, Chromium alive, CDP reachable.
-- [ ] `GET /screenshot` → PNG of the root window (`scrot` or `import -window root`), plus
-      `{"width":1280,"height":800}`.
-- [ ] `POST /act` → one primitive, mapped to `xdotool`:
+- [x] `GET /health` → display size, Chromium alive, CDP reachable. The compose healthcheck now calls
+      this, so a green container means the agent can actually see, act and probe.
+- [x] `GET /screenshot` → `{width, height, sha256, captured_at_ms, png_base64}`. The **sha256 is
+      computed here**, giving one canonical value for §7's `observation_hash` and Step 11's
+      no-progress rule. Added `GET /screenshot.png` (raw bytes) purely so a human can open the
+      agent's view in a browser, and `POST /zoom` (Pillow crop, coordinates stay in full-screenshot
+      space per §4).
+- [x] `POST /act` → one primitive, mapped to `xdotool`:
 
   | Action                        | Command                                                        |
   | ----------------------------- | -------------------------------------------------------------- |
@@ -560,22 +609,123 @@ this is also your human-handoff window later.
   | `cursor_position`             | `xdotool getmouselocation`                                     |
   | `wait`                        | server-side sleep, capped                                      |
 
-  Return `{"ok": true, "settled_ms": N}` after a short settle delay, or a structured error.
+  Returns `{"ok": true, "settled_ms": N, "detail": {...}}` after a bounded settle delay, or a
+  structured error. Every call is `create_subprocess_exec` with an argv list — never a shell — and
+  typed text is passed after `--` as its own argument. Validation is **syntactic only** (bounds,
+  caps, keysym syntax); notably `ctrl+l` is *not* rejected here, because that is policy and belongs
+  to Step 6 on the host (§12.2).
 
-- [ ] `POST /probe` → **read-only** DOM/AX lookup at `{x, y}` over CDP on `localhost:9222`:
+- [x] `POST /probe` → **read-only** DOM/AX lookup at `{x, y}` over CDP on `localhost:9222`:
       frame tree with URLs, then `document.elementFromPoint` inside the frame containing the point,
       returning tag, computed role, accessible name, visible text, nearest `<label>`, enclosing form or
       region, and a `match_count` for each candidate locator via `querySelectorAll` /
-      text search. Ship the expression as a fixed `sandbox/probe.js`; the only model-influenced inputs
-      are the coordinates. Never accept a JS expression over the wire — that would hand the model an
-      arbitrary-code channel through the back door.
-- [ ] `POST /probe/observe` → the same frame-tree + dialog + visible-heading snapshot with no
-      coordinate, used for `observation_before` / `observation_after`.
+      text search. Shipped as a fixed `sandbox/probe.js`, applied to an element handle via
+      `Runtime.callFunctionOn`; the wire carries two integers and never JavaScript.
 
-**Verification:** from the host, `curl 127.0.0.1:8900/health`; `curl -X POST 127.0.0.1:8900/act -d
-'{"kind":"left_click","coordinate":[640,400]}'`; `curl -X POST 127.0.0.1:8900/probe -d
-'{"x":640,"y":400}'` returns a JSON element description whose `frame_path` is `["servicing-frame"]`
-when you point at content inside the iframe. Save one screenshot to a file and open it.
+      **Implementation notes.** Hit-testing uses `DOM.getNodeForLocation`, which descends into
+      iframes natively — that removes §10's "probe returns the iframe element" failure mode entirely
+      rather than mitigating it. Four behaviours were added after seeing real output:
+
+      1. **Layout-table guard.** The sim uses tables for page layout as well as forms, so the naive
+         "read the preceding cell" rule returned an entire panel's text as a button's label. Labels
+         are now length-bounded and cells containing their own controls are skipped.
+      2. **Generated ids are never candidates.** `inp_0a8b8b80` is recorded as
+         `dom_id_stability: "generated"` — evidence of *why* no id locator was offered.
+      3. **Placeholder-derived names are demoted.** Chromium computes the Opening Amount field's
+         accessible name as `$0.00` (its placeholder). That looks authoritative and is useless, so
+         it is flagged `name_source: "placeholder"` and ranked below the structural candidates.
+      4. **Retargeting to the interactive ancestor.** A click on the icon button lands on its
+         `<img>`; the probe describes the `<button>` and records `retargeted_from: "img"`.
+- [x] `POST /probe/observe` → frame tree with URLs, dialogs, overlays, banners, headings, per-frame
+      control inventory, and a `dom_hash` — the text-level companion to the screenshot hash, which is
+      what makes `dom_changed` decidable without diffing images.
+
+**Verification (all passed).** Automated, from the host:
+
+```bash
+curl -s 127.0.0.1:8900/health | python3 -m json.tool
+curl -s -X POST 127.0.0.1:8900/probe -H 'content-type: application/json' -d '{"x":550,"y":96}'
+```
+
+Confirmed: `/health` reports 1280x800 + Chromium + CDP; the screenshot sha256 changed after a click
+and the flow search → detail → form ran entirely through `/act`; probes inside the iframe return
+`frame_path: ["servicing-frame"]`; the Member ID input returns **no** accessible name but
+`nearby_label: "Member ID"` plus `input[name="member_id"]`; both Member Detail "Back" buttons report
+`match_count: 2`; out-of-bounds coordinates, unknown kinds, malformed key combos and over-cap waits
+all return 422.
+
+### Manual verification — Terminal
+
+```bash
+docker compose up -d && docker compose ps        # sandbox healthy = /health answering
+
+# 1. What the agent can see, in your own browser:
+open http://localhost:8900/screenshot.png
+
+# 2. Every endpoint, clickable, no curl needed:
+open http://localhost:8900/docs                  # FastAPI Swagger UI
+
+# 3. Health detail
+curl -s 127.0.0.1:8900/health | python3 -m json.tool
+
+# 4. Drive the app yourself — watch it happen live in noVNC (localhost:6080/vnc.html)
+A() { curl -s -X POST 127.0.0.1:8900/act -H 'content-type: application/json' -d "$1"; echo; }
+A '{"kind":"left_click","coordinate":[550,96]}'
+A '{"kind":"type","text":"12345"}'
+A '{"kind":"key","text":"Return","settle_ms":900}'
+A '{"kind":"left_click","coordinate":[360,148],"settle_ms":1200}'   # open the result row
+
+# 5. What is on screen, semantically
+curl -s -X POST 127.0.0.1:8900/probe/observe | python3 -m json.tool | head -40
+
+# 6. Probe a control
+curl -s -X POST 127.0.0.1:8900/probe -H 'content-type: application/json' \
+  -d '{"x":233,"y":239}' | python3 -m json.tool
+```
+
+**Finding coordinates without guessing:** move the pointer over any control in the noVNC window, then
+
+```bash
+curl -s -X POST 127.0.0.1:8900/act -H 'content-type: application/json' \
+  -d '{"kind":"cursor_position"}'
+```
+
+which reports those exact coordinates — feed them straight to `/probe`.
+
+**What good output looks like:** a probe of the Member ID input shows an empty `accessible_name`, a
+`nearby_label` of "Member ID", and candidates led by `contextual_text` and `input[name="member_id"]`.
+A probe of either "Back" on Member Detail shows `match_count: 2` — the ambiguity signal. A probe of
+the icon-only button shows `retargeted_from: "img"` and only a structural candidate.
+
+### Manual verification — Docker Desktop
+
+1. **Containers** → `interface-ai` → `sandbox` should be green *Running (healthy)*; green now means
+   `/health` is answering, not merely that the process started.
+2. **Logs** tab → one uvicorn access line per request (`"POST /probe HTTP/1.1" 200 OK`). Run a curl
+   and watch it appear; this is the fastest way to tell "the agent never got my request" from "the
+   agent failed".
+3. **Ports** column → click `8900` to open the API in a browser (append `/docs` for Swagger).
+4. **Exec** tab → shell inside the container:
+   `curl -s 127.0.0.1:8900/health`, `xdotool getmouselocation`, `scrot -o /tmp/x.png`.
+5. **Files** tab → browse to `/opt/sandbox/` and confirm `surface_agent.py` and `probe.js` are the
+   bind-mounted development copies.
+6. Edit `sandbox/probe.js` on the host, hit **Restart** on the container, and re-probe — the change is
+   live with no rebuild (this is §0.5's inner loop; drop the bind mount before Step 14 evidence).
+
+### Findings that affect later steps
+
+1. **The `dialog` fault profile is inert.** `.modal-overlay` exists in both stylesheets but **no
+   template renders it**, so `fault set dialog` changes nothing on screen. `/probe/observe` scans for
+   it and will simply report none. Step 8's escalation demo and §10's unknown-modal path both need
+   that template work first — the one place §12.10's "Dockerfile only" rule has to be relaxed.
+2. **`static/icons/refresh.png` now exists but renders unconstrained** — roughly 515x515 px,
+   dominating the form and pushing layout around. `.icon-only-button img` needs a width/height in
+   `servicing.css`. It is supposed to be a *small* icon-only control; at this size it is not the
+   discovery challenge it was meant to be.
+3. **Stale X lock (fixed in Step 2's entrypoint).** After the container was killed hard, a leftover
+   `/tmp/.X99-lock` made Xvfb refuse to start ever again with "Server is already active for display
+   99". The entrypoint now removes the lock when no X server answers on that display. Worth knowing
+   because the symptom looks like image corruption rather than a stale file.
 
 ---
 
@@ -583,17 +733,107 @@ when you point at content inside the iframe. Save one screenshot to a file and o
 
 **Owner:** Claude Code · **Time:** 1.5 h
 
-- [ ] `src/domain/actions.py`: Pydantic v2 discriminated union on `kind`, one model per enabled member
-      (`Screenshot`, `Zoom`, `LeftClick`, `DoubleClick`, `Type`, `Key`, `Scroll`, `Wait`,
-      `CursorPosition`) plus the four terminal declarations (`GoalComplete`, `BusinessOutcome`,
-      `RequestHuman`, `CannotProceed`). Export JSON Schema for the custom-tool definitions in Step 9.
-- [ ] `src/domain/results.py`: `Success | BusinessOutcome | Failure | Escalated`, each with `run_id`
-      and a machine-readable `code`; failure carries `step_index`, `expected`, `observed`, `evidence`.
-- [ ] `src/domain/trace.py`: exactly §7 — `RunTrace`, `RecordedStep`, `Observation`, `ProbeResult`,
-      `LocatorCandidate`, `PolicyDecision`, `Budget`. YAML round-trip helpers.
+- [x] `src/domain/actions.py`: Pydantic v2 discriminated union on `kind`, one model per enabled member
+      plus the four terminal declarations, and `terminal_tool_schemas()` generating the custom-tool
+      definitions from those same models — so the contract the model is shown and the contract the
+      parser enforces cannot drift.
+      **Decision: the eight disabled members have no model at all.** A `left_click_drag` fails
+      validation, is never executed, and counts toward `INVALID_ACTIONS_EXCEEDED`. Step 6's allowlist
+      re-checks the parsed kind, giving two independent gates rather than one. `extra="forbid"`
+      everywhere, so a malformed action is caught whole rather than half-applied. Field names mirror
+      **Anthropic's** member schemas (modifiers are `text` on clicks), because this union parses
+      `tool_use.input`; translating to the agent's wire format is Step 5's job.
+      `wait.duration` allows the API ceiling of 300 s — the adapter clamps to the agent's 10 s cap and
+      records that it clamped, rather than burning the invalid-action budget on a legal request.
+- [x] `src/domain/results.py`: `Success | BusinessOutcomeResult | Failure | Escalated` on `status`,
+      every variant carrying `run_id` and a `StopReason`. Codes are `StrEnum`s (`FailureCode`,
+      `BusinessOutcomeCode`, `EscalationReason`) so Step 11 cannot invent a spelling the caller has
+      never heard of. `Success.checkpoint_verified` defaults to **False**: the model saying "done" is
+      not verification, and that has to be set deliberately by observed state.
+- [x] `src/domain/trace.py`: §7 as types — `RunTrace`, `RecordedStep`, `Observation`, `FrameInfo`,
+      `ProbeResult`, six `LocatorCandidate` variants, `PolicyDecision`, `Display`, `ProviderInfo`,
+      `Budget`, with `to_yaml`/`from_yaml` that preserve declaration order (a trace is read by a human
+      reviewer; alphabetised keys scatter each step's story).
+      `LocatorCandidate` is a **strict** discriminated union: a seventh kind in `probe.js` requires a
+      matching model here, which is the right friction for something the canonicalizer matches
+      exhaustively.
 
-**Verification:** `pytest tests/` with a test that a `left_click` with a bad `coordinate` is rejected,
-that an unknown `kind` is rejected, and that a hand-written trace YAML round-trips unchanged.
+**Verification (all passed).** `poetry run pytest` — 35 tests, no network, no Docker, no API key.
+Two findings the tests forced out:
+
+- `Coordinate` was declared but never constrained, so `[-5, 10]` parsed happily. Now `ge=0`; the upper
+  bound stays with the surface agent, which is the only component that knows the display size.
+- **`Observation` was missing `visible_text`.** It was modelled on §7's sketch, while the agent had
+  been returning that field all along — invisible to any hand-written fixture. Caught by validating a
+  live payload, and §7 has been amended.
+
+Also required `package-mode = false` in `pyproject.toml`: this repo is an application with no
+importable root module, which is the same fact the Step 1 Dockerfile encoded as `--no-root`.
+
+### Manual verification — Terminal
+
+Nothing to click in this step, so the checks are REPL-shaped. The last one is the one that matters.
+
+```bash
+poetry run pytest -v                       # 35 passed, offline
+
+# 1. Watch the first safety gate reject what it should
+poetry run python -c "
+from src.domain.actions import parse_action
+for bad in [{'kind':'left_click_drag','start_coordinate':[1,1],'coordinate':[2,2]},
+            {'kind':'left_click','coordinate':[-5,10]},
+            {'kind':'type','text':'hi','unexpected':1},
+            {'kind':'teleport'}]:
+    try: parse_action(bad); print('ACCEPTED (wrong):', bad)
+    except Exception as e: print('rejected:', bad['kind'], '->', type(e).__name__)
+"
+
+# 2. The exact JSON Schema Step 10 will send to the API
+poetry run python -c "
+import json; from src.domain.actions import terminal_tool_schemas
+print(json.dumps(terminal_tool_schemas(), indent=2))" | head -40
+
+# 3. Round-trip the example trace and read it back
+poetry run python -c "
+from src.domain.trace import RunTrace
+t = RunTrace.from_yaml(open('tests/fixtures/example_trace.yaml').read())
+print(t.run_id, '| steps:', len(t.steps), '| outcome:', t.outcome.status)
+print('steps missing a probe or a reason:', t.steps_missing_probe())
+print(t.to_yaml()[:300])"
+
+# 4. THE REAL CHECK — validate a LIVE probe against the models
+docker compose up -d
+curl -s -X POST 127.0.0.1:8900/probe -H 'content-type: application/json' \
+  -d '{"x":550,"y":96}' > /tmp/probe.json
+poetry run python -c "
+from src.domain.trace import ProbeResult
+p = ProbeResult.model_validate_json(open('/tmp/probe.json').read())
+print('validated:', p.tag, p.role, '| name:', p.accessible_name, '| label:', p.nearby_label)
+print('candidates:', [(c.kind, c.match_count) for c in p.candidates])
+print('best:', p.best_candidate.kind if p.best_candidate else None, '| ambiguous:', p.is_ambiguous)"
+```
+
+Check 4 is what separates "the models match the plan" from "the models match the software". Its
+payloads are now committed as `tests/fixtures/live_*.json` so the check runs offline forever — a
+hand-written fixture agrees with whatever you imagined; a captured one does not.
+
+**What good output looks like:** the Member ID input validates with `accessible_name: None`,
+`nearby_label: "Member ID"`, `dom_id_stability: "generated"`, and a `contextual_text` candidate at
+`match_count: 1`. The Search button validates with `role: button`, `accessible_name: "Search"`,
+`accessible_name_source: "visible_text"`.
+
+### Manual verification — Docker Desktop
+
+This step adds no services, so Docker Desktop's only role is supplying a live agent for check 4:
+confirm `sandbox` is green *Running (healthy)*, then use the **Exec** tab to run the probe from inside
+the container if the relay is ever in doubt:
+
+```bash
+curl -s -X POST 127.0.0.1:8900/probe -H 'content-type: application/json' -d '{"x":550,"y":96}'
+```
+
+Same JSON, one hop shorter — if this works and the host call does not, the problem is the relay, not
+the agent.
 
 ---
 
@@ -601,21 +841,75 @@ that an unknown `kind` is rejected, and that a hand-written trace YAML round-tri
 
 **Owner:** Claude Code · **Time:** 2 h
 
-- [ ] `src/surfaces/base.py`: `SurfaceAdapter` protocol — `observe()`, `act(action)`,
-      `probe(x, y)`, `capture_evidence(label)`, `pause()`, `resume()`, plus
-      `resolve_target(...)` declared and raising `NotImplementedError` with a comment that it is the
-      replay-time entry point.
-- [ ] `src/surfaces/x11_computer.py`: HTTP client for the surface agent. Owns
-      **coordinate scaling in both directions** — `screenshot_scale` is computed from the API limits
-      (1568 px long edge, ~1.15 MP) even though it evaluates to 1.0 at 1280x800, and model coordinates
-      are divided by it before dispatch. Keep the arithmetic in one pure function so it is unit
-      testable without a container.
-- [ ] `src/cli.py drive`: a scripted, model-free walkthrough — click the member field, type `12345`,
-      press Return, screenshot. Hardcoded coordinates are fine; this exists to prove the hands work
-      before spending a token.
+- [x] `src/surfaces/base.py`: async `SurfaceAdapter` protocol plus a typed error hierarchy, because
+      the controller must tell these apart: `SurfaceUnavailable` (the sandbox is gone → stop the run),
+      `ActionRejected` (well-formed but wrong for this screen → let the model retry),
+      `UnsupportedAction` (**the driver cannot express it at all** → no amount of re-aiming helps),
+      and `ProbeFailed`. `resolve_target` is declared and raises `NotImplementedError` — the replay
+      seam, marked without letting replay logic leak in.
+- [x] `src/surfaces/x11_computer.py`: `httpx.AsyncClient` against `SANDBOX_AGENT_URL`, returning Step 4
+      `Observation` / `ProbeResult` objects rather than dicts. **Scaling is three pure functions**
+      (`compute_scale`, `to_model`, `to_display`) with the limits as *parameters* — conservative
+      defaults (1568 px / 1.15 MP), with Opus 5's larger ceiling a passed argument rather than an edit.
+      At 1280x800 the factor is exactly 1.0 and the path still runs, so it cannot rot unnoticed.
+- [x] **Capability-gap policy: clamp bounds, refuse semantics.** The domain models mirror Anthropic's
+      schema; the agent has tighter limits. Where a smaller number preserves intent (`wait` 300s→10s,
+      `scroll` 50→20) the adapter clamps and records `clamped: {requested, applied}`, so the trace
+      never claims an action ran as asked when something else did. Where clamping would change meaning
+      it refuses: truncating typed text would enter **wrong data** into a banking form, and dropping a
+      `ctrl` modifier yields a plain click that looks like it worked.
+- [x] `src/cli.py`: `drive`, plus `sandbox-status` and `fault set` (pulled forward from Step 13 because
+      `drive` wanted them). `drive` prints the noVNC URL, resets to a known screen, probes the Member ID
+      field **before** navigating away, acts, then probes an ambiguous control.
 
-**Verification:** `poetry run python -m src.cli drive` moves the real cursor in the noVNC window and
-leaves before/after screenshots on disk showing member 12345's search result.
+**Verification (all passed).** `poetry run pytest` — 55 tests, offline. Live: `sandbox-status` reports
+1280x800 / scale 1.0 / Chrome alive, and `drive` exits 0 having driven search → result row → Member
+Detail, leaving `evidence/drive/01-before.png` and `02-after.png` (confirmed by eye: Martinez, J. with
+both Back buttons). `drive` asserts in-band that the screenshot hash **changed** and that `12345` is on
+screen, so a run where the clicks go nowhere fails loudly instead of printing a happy log.
+
+Three things the run surfaced:
+
+1. **The sandbox is stateful.** Chromium keeps whatever page the previous run left behind, so the
+   second `drive` started on Member Detail and its clicks went nowhere — caught only because of the
+   in-band assertion. `drive` now resets by clicking the app's own **Members** nav link (no URL entry,
+   which the agent deliberately cannot do) and verifies it landed on Member Search before acting.
+   A smoke test that only passes on a fresh container is not a smoke test.
+2. **Probe placement matters.** The first version probed the member field's coordinate *after*
+   navigating, landing on a `<fieldset>` and demonstrating nothing. It now probes while the field is on
+   screen — showing `accessible_name: None`, `nearby_label: "Member ID"`, `dom_id: inp_266d92b0
+   (generated)` — then probes a "Back" button, where every candidate reports `match_count: 2`.
+3. `observe(label=...)` now names its own screenshot, replacing a separate `capture_evidence` call that
+   cost an extra round trip and wrote the same frame to disk twice under different names.
+
+### Opening the noVNC window — Terminal
+
+```bash
+docker compose ps                              # relay must be Up: IT publishes 6080, not sandbox
+curl -sI localhost:6080/vnc.html | head -1     # expect HTTP/1.1 200 OK before opening anything
+
+open "http://localhost:6080/vnc.html?autoconnect=true&resize=scale"
+```
+
+The query string earns its place: `autoconnect=true` skips noVNC's Connect button, and `resize=scale`
+fits 1280x800 into a smaller window **without touching the remote display**. Never use
+`resize=remote` — that resizes the X display itself, which would silently invalidate every coordinate
+in the trace and every hardcoded coordinate in `drive`.
+
+`sandbox-status` and `drive` both print this URL, so in practice you can copy it from their output.
+
+Side-by-side is the intended way to watch: terminal on one half, noVNC on the other, then run
+`poetry run python -m src.cli drive` and watch the cursor move.
+
+### Opening the noVNC window — Docker Desktop
+
+1. **Containers** → `interface-ai` → the **`relay`** row (not `sandbox`).
+2. Click **6080:6080** in the **Port(s)** column, or hover the row → ⋮ → *Open with browser*.
+3. Docker opens `http://localhost:6080/` — **append `/vnc.html`**, since Docker cannot know the path.
+   For the no-click version paste the full URL with the query string above.
+4. The `sandbox` row shows no clickable ports at all. That is correct: it is on the internal-only
+   network and publishes nothing (Step 2.0). If noVNC will not load, check `relay` before suspecting
+   the desktop.
 
 ---
 
@@ -860,7 +1154,7 @@ probe on every click, and the run cost is within budget.
 | `/dev/*` is unreachable **to the agent** (not to the network)                   | Policy test: a `/dev/` frame URL denies with `ROUTE_NOT_ALLOWED`. Note `curl` from inside the sandbox *does* reach it — see Step 1 |
 | The sandbox has no internet                                                    | `docker compose exec sandbox curl https://example.com` fails     |
 | Every click/type step carries a probe with ordered candidates and match counts | Trace inspection                                                 |
-| Duplicated `Continue` is recorded as `match_count: 2`                          | Trace inspection                                                 |
+| Duplicated **`Back`** is recorded as `match_count: 2` (see Step 3 — the built sim has two Back buttons on Member Detail, not two Continues) | Trace inspection; verified at the probe level in Step 3 |
 | Completion is verified from observed state, not the model's claim              | Wrong-screen `goal_complete` fixture returns `CHECKPOINT_FAILED` |
 | Every stopping rule fires with a distinct code                                 | `test_loop_detection.py`                                         |
 | A cancelled run still leaves valid evidence                                    | Ctrl-C mid-run                                                   |

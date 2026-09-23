@@ -1,5 +1,11 @@
-# The build context is the repo root, so keep it small: everything here stays out of
-# the daemon transfer and out of the images.
+# Applies to the bank-sim build ONLY, whose context is the repo root.
+#
+# The sandbox and relay services build from `context: ./sandbox`, so Docker looks for
+# sandbox/.dockerignore instead and this file is never consulted for them. That is
+# what lets the `sandbox/` exclusion below coexist with a working sandbox image.
+# If you ever switch that service to `context: .`, delete the `sandbox/` line first —
+# otherwise the files the Dockerfile copies are silently excluded and the build fails
+# in a way that reads like a missing file rather than an ignore rule.
 
 .git
 .gitignore
@@ -14,6 +20,11 @@
 **/__pycache__
 *.pyc
 *.pyo
+
+# Test and lint caches: regenerated locally, never useful inside an image.
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # Planning docs and deliverables — not needed to run the simulator.
 *.md

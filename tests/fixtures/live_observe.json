@@ -1,0 +1,69 @@
+{
+    "main_frame_url": "http://bank-sim:8001/",
+    "title": "Credit Union Servicing Portal",
+    "frames": [
+        {
+            "path": [],
+            "url": "http://bank-sim:8001/",
+            "headings": [],
+            "controls": [
+                {
+                    "tag": "a",
+                    "type": null,
+                    "name": null,
+                    "text": "Members"
+                },
+                {
+                    "tag": "a",
+                    "type": null,
+                    "name": null,
+                    "text": "Accounts"
+                },
+                {
+                    "tag": "a",
+                    "type": null,
+                    "name": null,
+                    "text": "Reports"
+                },
+                {
+                    "tag": "a",
+                    "type": null,
+                    "name": null,
+                    "text": "Admin"
+                }
+            ]
+        },
+        {
+            "path": [
+                "servicing-frame"
+            ],
+            "url": "http://bank-sim:8001/servicing/members/search",
+            "headings": [
+                "Member Search"
+            ],
+            "controls": [
+                {
+                    "tag": "input",
+                    "type": "text",
+                    "name": "member_id",
+                    "text": ""
+                },
+                {
+                    "tag": "button",
+                    "type": "submit",
+                    "name": null,
+                    "text": "Search"
+                }
+            ]
+        }
+    ],
+    "dialogs": [],
+    "overlays": [],
+    "banners": [],
+    "headings": [
+        "Member Search"
+    ],
+    "visible_text": "Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports Admin\nMember Search Member ID: Search",
+    "dom_hash": "sha256:54b5dd558ecdf8dbf9e94520a2d2caf9e2a13c27a6c81a478f587401515aa691",
+    "observed_at_ms": 1790122041418
+}
