@@ -14,7 +14,13 @@
 # Model-free smoke-test output: a development aid, not the committed deliverable.
 evidence/drive/
 
+# The scripted handoff rehearsal. Regenerate it any time for free; the committed
+# artifact is the real capture, not the practice run.
+evidence/handoff-fake
+
 evidence/run_*/
+
+evidence/handoff-demo/
 
 docker-compose.override.yml
 

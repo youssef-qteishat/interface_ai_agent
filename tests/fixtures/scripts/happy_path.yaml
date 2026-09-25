@@ -1,0 +1,19 @@
+# A model-free script of the search -> detail walkthrough. Mirrors what `drive` does
+# by hand, so the loop can be exercised end to end with no network.
+- reason: "reset to the search page"
+  actions:
+    - {kind: left_click, coordinate: [46, 58]}
+    - {kind: screenshot}
+- reason: "enter the member id"
+  actions:
+    - {kind: left_click, coordinate: [550, 96]}
+    - {kind: type, text: "12345"}
+    - {kind: key, text: "Return"}
+    - {kind: screenshot}
+- reason: "open the result row"
+  actions:
+    - {kind: left_click, coordinate: [360, 148]}
+    - {kind: screenshot}
+- reason: "the member detail screen is up"
+  actions:
+    - {kind: goal_complete, summary: "Reached Member Detail for the requested member"}

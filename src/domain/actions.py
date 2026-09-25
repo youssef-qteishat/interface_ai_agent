@@ -213,11 +213,37 @@ TERMINAL_KINDS: frozenset[str] = frozenset(
 )
 
 
+# --------------------------------------------------------------------------- #
+# what a human did
+# --------------------------------------------------------------------------- #
+
+
+class HumanIntervention(_Action):
+    """A person held the screen and changed something.
+
+    Deliberately NOT a member of `AgentAction`, so the model cannot propose it: there is
+    no tool schema for it, and `parse_action` would reject it. Only the controller
+    constructs one, and only after a handoff completes.
+
+    What it does not claim: any knowledge of what the human clicked. At this stage the
+    step's own DOM diff is the record of what changed — the injected observer described
+    in `IMPLEMENTATION.md` belongs to the escalation layer, not here. Recording a
+    coordinate we never saw would be worse than recording none.
+    """
+
+    kind: Literal["human_intervention"] = "human_intervention"
+    intervention_id: str
+    reason: str
+    operator: str | None = None
+    context: str | None = Field(None, description="Why the human was called in.")
+
+
 def parse_action(payload: dict[str, Any]) -> Any:
     """Parse one `tool_use.input` (plus its member name as `kind`).
 
     Raises `pydantic.ValidationError` for anything outside the vocabulary — including
-    the eight disabled members, which have no model by design.
+    the eight disabled members and `human_intervention`, none of which have a place in
+    the union by design.
     """
     return _agent_action_adapter.validate_python(payload)
 

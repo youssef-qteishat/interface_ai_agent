@@ -26,7 +26,6 @@ import base64
 import math
 import os
 import re
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -121,17 +120,17 @@ class X11ComputerAdapter:
         self,
         base_url: str = DEFAULT_AGENT_URL,
         *,
-        evidence_dir: str | Path | None = None,
         timeout: float = 30.0,
         max_long_edge: int = DEFAULT_MAX_LONG_EDGE,
         max_pixels: int = DEFAULT_MAX_PIXELS,
     ) -> None:
         self.base_url = base_url.rstrip("/")
-        self.evidence_dir = Path(evidence_dir) if evidence_dir else None
         self.max_long_edge = max_long_edge
         self.max_pixels = max_pixels
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=timeout)
         self._paused = False
+        # Bytes of the most recent screenshot, for the evidence writer to persist.
+        self.last_screenshot_png: bytes | None = None
         # Learned from /health on first use; until then, assume no scaling.
         self.display_width: int | None = None
         self.display_height: int | None = None
@@ -206,27 +205,23 @@ class X11ComputerAdapter:
         """Raw screenshot payload: width, height, sha256, png_base64."""
         return (await self._request("GET", "/screenshot")).json()
 
-    async def observe(
-        self, *, with_screenshot: bool = True, label: str | None = None
-    ) -> Observation:
+    async def observe(self, *, with_screenshot: bool = True) -> Observation:
         """Build a Step 4 `Observation` from the agent's two read endpoints.
 
         The screenshot's sha256 becomes `observation_hash`; the agent's text digest
         stays `dom_hash`. Keeping both is what lets Step 11 tell "the page repainted"
         from "the page changed".
 
-        `label` names the saved PNG. One observation writes at most one file — asking
-        for a screenshot separately would cost another round trip and leave two copies
-        of the same frame on disk under different names.
+        The PNG bytes are left on `last_screenshot_png` rather than written here: the
+        evidence writer owns the filesystem, which is what makes "everything on disk
+        passed the redaction gate" a true statement rather than an intention.
         """
         payload = (await self._request("POST", "/probe/observe")).json()
         observation = Observation.model_validate(payload)
         if with_screenshot:
             shot = await self.screenshot()
             observation.observation_hash = f"sha256:{shot['sha256']}"
-            if self.evidence_dir is not None:
-                path = self._write_png(shot["png_base64"], label or shot["sha256"][:12])
-                observation.screenshot = str(path)
+            self.last_screenshot_png = base64.b64decode(shot["png_base64"])
         return observation
 
     async def zoom(self, region: tuple[int, int, int, int]) -> dict[str, Any]:
@@ -236,18 +231,14 @@ class X11ComputerAdapter:
             await self._request("POST", "/zoom", json={"region": list(display_region)})
         ).json()
 
-    async def capture_evidence(self, label: str) -> str | None:
-        shot = await self.screenshot()
-        if self.evidence_dir is None:
-            return None
-        return str(self._write_png(shot["png_base64"], label))
+    async def capture_evidence(self) -> bytes:
+        """Return PNG bytes for the evidence writer to persist.
 
-    def _write_png(self, png_base64: str, label: str) -> Path:
-        assert self.evidence_dir is not None
-        self.evidence_dir.mkdir(parents=True, exist_ok=True)
-        path = self.evidence_dir / f"{label}.png"
-        path.write_bytes(base64.b64decode(png_base64))
-        return path
+        Deliberately does not write: one component owns the filesystem (see `observe`).
+        """
+        shot = await self.screenshot()
+        self.last_screenshot_png = base64.b64decode(shot["png_base64"])
+        return self.last_screenshot_png
 
     # ---- understanding ----
 

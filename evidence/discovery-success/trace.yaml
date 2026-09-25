@@ -1,0 +1,3858 @@
+schema_version: 1.0.0
+run_id: run_20260925_013816_266d
+goal: Find member ${inputs.member_id} and prepare a ${inputs.account_type} sub-account, opening amount
+  ${inputs.opening_amount}; stop at review
+surface_kind: web
+target: http://bank-sim:8001/
+display:
+  width: 1280
+  height: 800
+  scale_sent_to_model: 1.0
+provider:
+  name: anthropic
+  model: claude-opus-5
+  tool: computer
+fault_profile: dialog
+started_at: '2026-09-25T01:38:16+00:00'
+ended_at: '2026-09-25T01:40:37.019+00:00'
+steps:
+- index: 0
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 549
+    - 96
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <input> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ''
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search'
+    screenshot: steps/000-before.png
+    observation_hash: sha256:cca0f7373ca6fc5264bdb8086d113400d217d6d32fff1e482bd9a4127a90d093
+    dom_hash: sha256:54b5dd558ecdf8dbf9e94520a2d2caf9e2a13c27a6c81a478f587401515aa691
+    observed_at_ms: 1790300298728
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 549
+    - 96
+    frame_path:
+    - servicing-frame
+    role: textbox
+    role_source: ax_tree
+    accessible_name: null
+    accessible_name_source: null
+    tag: input
+    hit_tag: input
+    retargeted_from: null
+    role_hint: textbox
+    name_hint: null
+    type: text
+    name_attr: member_id
+    dom_id: inp_7676796a
+    dom_id_stability: generated
+    visible_text: null
+    nearby_label: Member ID
+    placeholder: null
+    title: null
+    value: ''
+    disabled: false
+    visible: true
+    enclosing_region: form
+    enclosing_region_label: null
+    classes: []
+    rect:
+      x: 291
+      y: 42
+      width: 179
+      height: 21
+    candidates:
+    - match_count: 1
+      kind: contextual_text
+      anchor: Member ID
+      relative: input
+    - match_count: 1
+      kind: attribute
+      selector: input[name="member_id"]
+      attribute: name
+      value: member_id
+    - match_count: 1
+      kind: css
+      selector: table.form-table > tbody > tr > td:nth-of-type(2) > input
+      stability: unverified
+    element_fingerprint: sha256:c22d340d2bb049701858d317985530468c6f7f7a6856a172669d288944c8672a
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ''
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search'
+    screenshot: steps/000-after.png
+    observation_hash: sha256:9e06eae1ca364947f37973ba973ee7a8c02d765bcc1d3aa92a4748cdb13394d5
+    dom_hash: sha256:54b5dd558ecdf8dbf9e94520a2d2caf9e2a13c27a6c81a478f587401515aa691
+    observed_at_ms: 1790300303359
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 371
+    settled_ms: 454
+  model_reason: I'll search for member ${inputs.member_id}.
+  error: null
+- index: 1
+  actor: automation
+  action:
+    kind: type
+    text: ${inputs.member_id}
+  policy:
+    decision: allow
+    risk: reversible
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ''
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search'
+    screenshot: steps/001-before.png
+    observation_hash: sha256:9e06eae1ca364947f37973ba973ee7a8c02d765bcc1d3aa92a4748cdb13394d5
+    dom_hash: sha256:54b5dd558ecdf8dbf9e94520a2d2caf9e2a13c27a6c81a478f587401515aa691
+    observed_at_ms: 1790300303444
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search'
+    screenshot: steps/001-after.png
+    observation_hash: sha256:42e4197bf549beaecbd0f5cdfd55aa7f793827806904545ff81939796388cc55
+    dom_hash: sha256:54b5dd558ecdf8dbf9e94520a2d2caf9e2a13c27a6c81a478f587401515aa691
+    observed_at_ms: 1790300303815
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 303
+    settled_ms: 375
+  model_reason: I'll search for member ${inputs.member_id}.
+  error: null
+- index: 2
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 1069
+    - 96
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <button> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search'
+    screenshot: steps/002-before.png
+    observation_hash: sha256:42e4197bf549beaecbd0f5cdfd55aa7f793827806904545ff81939796388cc55
+    dom_hash: sha256:54b5dd558ecdf8dbf9e94520a2d2caf9e2a13c27a6c81a478f587401515aa691
+    observed_at_ms: 1790300303888
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 1069
+    - 96
+    frame_path:
+    - servicing-frame
+    role: button
+    role_source: ax_tree
+    accessible_name: Search
+    accessible_name_source: visible_text
+    tag: button
+    hit_tag: button
+    retargeted_from: null
+    role_hint: button
+    name_hint: Search
+    type: submit
+    name_attr: null
+    dom_id: null
+    dom_id_stability: null
+    visible_text: Search
+    nearby_label: Member ID
+    placeholder: null
+    title: null
+    value: ''
+    disabled: false
+    visible: true
+    enclosing_region: form
+    enclosing_region_label: null
+    classes: []
+    rect:
+      x: 870
+      y: 42
+      width: 62
+      height: 21
+    candidates:
+    - match_count: 1
+      kind: role
+      role: button
+      name: Search
+      name_source: visible_text
+    - match_count: 1
+      kind: text
+      tag: button
+      text: Search
+    - match_count: 1
+      kind: contextual_text
+      anchor: Member ID
+      relative: button
+    - match_count: 1
+      kind: css
+      selector: table.form-table > tbody > tr > td:nth-of-type(3) > button
+      stability: unverified
+    element_fingerprint: sha256:a91c29b86a6d8131af8b9b65a168fbbbb5d73772e98a57a81e107a1e92429b0f
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search Member Name Status ${inputs.member_id} Martinez, J. Active Click
+      a row to view member details.'
+    screenshot: steps/002-after.png
+    observation_hash: sha256:bb43db80ac55fe3b3a6758ed5b75c22a6225a712bd49f4c6df0db08a07365b11
+    dom_hash: sha256:47b398c2afd85a678bc77703e650c901a72d9c262861d5ab0acb6c68e50e8a83
+    observed_at_ms: 1790300304352
+    dom_changed: true
+    new_text:
+    - Member Name Status ${inputs.member_id} Martinez, J. Active Click a row to view member details.
+    removed_text: []
+  timing:
+    dispatched_ms: 366
+    settled_ms: 443
+  model_reason: I'll search for member ${inputs.member_id}.
+  error: null
+- index: 3
+  actor: automation
+  action:
+    kind: wait
+    duration: 2.0
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search Member Name Status ${inputs.member_id} Martinez, J. Active Click
+      a row to view member details.'
+    screenshot: steps/003-before.png
+    observation_hash: sha256:bb43db80ac55fe3b3a6758ed5b75c22a6225a712bd49f4c6df0db08a07365b11
+    dom_hash: sha256:47b398c2afd85a678bc77703e650c901a72d9c262861d5ab0acb6c68e50e8a83
+    observed_at_ms: 1790300304441
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search Member Name Status ${inputs.member_id} Martinez, J. Active Click
+      a row to view member details.'
+    screenshot: steps/003-after.png
+    observation_hash: sha256:bb43db80ac55fe3b3a6758ed5b75c22a6225a712bd49f4c6df0db08a07365b11
+    dom_hash: sha256:47b398c2afd85a678bc77703e650c901a72d9c262861d5ab0acb6c68e50e8a83
+    observed_at_ms: 1790300306536
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 2015
+    settled_ms: 2097
+  model_reason: I'll search for member ${inputs.member_id}.
+  error: null
+- index: 4
+  actor: automation
+  action:
+    kind: screenshot
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search Member Name Status ${inputs.member_id} Martinez, J. Active Click
+      a row to view member details.'
+    screenshot: steps/004-before.png
+    observation_hash: sha256:bb43db80ac55fe3b3a6758ed5b75c22a6225a712bd49f4c6df0db08a07365b11
+    dom_hash: sha256:47b398c2afd85a678bc77703e650c901a72d9c262861d5ab0acb6c68e50e8a83
+    observed_at_ms: 1790300306628
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search Member Name Status ${inputs.member_id} Martinez, J. Active Click
+      a row to view member details.'
+    screenshot: steps/004-after.png
+    observation_hash: sha256:bb43db80ac55fe3b3a6758ed5b75c22a6225a712bd49f4c6df0db08a07365b11
+    dom_hash: sha256:47b398c2afd85a678bc77703e650c901a72d9c262861d5ab0acb6c68e50e8a83
+    observed_at_ms: 1790300306725
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 40
+    settled_ms: 93
+  model_reason: I'll search for member ${inputs.member_id}.
+  error: null
+- index: 5
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 500
+    - 148
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <tr> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/search
+      headings:
+      - Member Search
+      controls:
+      - tag: input
+        type: text
+        name: member_id
+        text: ${inputs.member_id}
+      - tag: button
+        type: submit
+        name: null
+        text: Search
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Search
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Search Member ID: Search Member Name Status ${inputs.member_id} Martinez, J. Active Click
+      a row to view member details.'
+    screenshot: steps/005-before.png
+    observation_hash: sha256:bb43db80ac55fe3b3a6758ed5b75c22a6225a712bd49f4c6df0db08a07365b11
+    dom_hash: sha256:47b398c2afd85a678bc77703e650c901a72d9c262861d5ab0acb6c68e50e8a83
+    observed_at_ms: 1790300306813
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 500
+    - 148
+    frame_path:
+    - servicing-frame
+    role: cell
+    role_source: retargeted_element
+    accessible_name: ${inputs.member_id}
+    accessible_name_source: computed
+    tag: tr
+    hit_tag: td
+    retargeted_from: td
+    role_hint: null
+    name_hint: null
+    type: null
+    name_attr: null
+    dom_id: null
+    dom_id_stability: null
+    visible_text: ${inputs.member_id} Martinez, J. Active
+    nearby_label: null
+    placeholder: null
+    title: null
+    value: null
+    disabled: false
+    visible: true
+    enclosing_region: div#results-panel
+    enclosing_region_label: null
+    classes:
+    - member-row
+    rect:
+      x: 9
+      y: 93
+      width: 1086
+      height: 24
+    candidates:
+    - match_count: null
+      kind: role
+      role: cell
+      name: ${inputs.member_id}
+      name_source: computed
+    - match_count: 1
+      kind: css
+      selector: '#results-panel table.data-table > tbody > tr.member-row'
+      stability: unverified
+    element_fingerprint: sha256:0d58c145962c0c85364bfcbec95442728d44e7ebfbd2dae1d5304e01c7037cc7
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/${inputs.member_id}
+      headings:
+      - Member Detail — ${inputs.member_id}
+      - Identity
+      - Existing Accounts
+      controls:
+      - tag: button
+        type: null
+        name: null
+        text: Back
+      - tag: a
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Back
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Detail — ${inputs.member_id}
+    - Identity
+    - Existing Accounts
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22 Open Sub-Account Back'
+    screenshot: steps/005-after.png
+    observation_hash: sha256:fd3752d4d60f5eef5415169b71367e6f3d7ac63cfe96ed68789581cf3cc24768
+    dom_hash: sha256:8f686176f34efd630bad97675903ad1a722b86deaaefc147c371a0358d7ce986
+    observed_at_ms: 1790300313087
+    dom_changed: true
+    new_text:
+    - Detail —
+    - 'Identity Name:'
+    - 'DOB: **/**/**** Phone: (***) ***-**42 Email: ****@***.com Status:'
+    - Back Existing Accounts Acct No Type Balance ****-0042 Savings $5420.50 ****-0091 Checking $1830.22
+      Open Sub-Account Back
+    removed_text:
+    - 'Search Member ID: Search Member Name Status'
+    - Click a row to view member details.
+  timing:
+    dispatched_ms: 365
+    settled_ms: 442
+  model_reason: Member ${inputs.member_id} (Martinez, J.) found. Opening the member record.
+  error: null
+- index: 6
+  actor: automation
+  action:
+    kind: wait
+    duration: 2.0
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/${inputs.member_id}
+      headings:
+      - Member Detail — ${inputs.member_id}
+      - Identity
+      - Existing Accounts
+      controls:
+      - tag: button
+        type: null
+        name: null
+        text: Back
+      - tag: a
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Back
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Detail — ${inputs.member_id}
+    - Identity
+    - Existing Accounts
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22 Open Sub-Account Back'
+    screenshot: steps/006-before.png
+    observation_hash: sha256:fd3752d4d60f5eef5415169b71367e6f3d7ac63cfe96ed68789581cf3cc24768
+    dom_hash: sha256:8f686176f34efd630bad97675903ad1a722b86deaaefc147c371a0358d7ce986
+    observed_at_ms: 1790300313218
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/${inputs.member_id}
+      headings:
+      - Member Detail — ${inputs.member_id}
+      - Identity
+      - Existing Accounts
+      controls:
+      - tag: button
+        type: null
+        name: null
+        text: Back
+      - tag: a
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Back
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Detail — ${inputs.member_id}
+    - Identity
+    - Existing Accounts
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22 Open Sub-Account Back'
+    screenshot: steps/006-after.png
+    observation_hash: sha256:fd3752d4d60f5eef5415169b71367e6f3d7ac63cfe96ed68789581cf3cc24768
+    dom_hash: sha256:8f686176f34efd630bad97675903ad1a722b86deaaefc147c371a0358d7ce986
+    observed_at_ms: 1790300315301
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 2011
+    settled_ms: 2087
+  model_reason: Member ${inputs.member_id} (Martinez, J.) found. Opening the member record.
+  error: null
+- index: 7
+  actor: automation
+  action:
+    kind: screenshot
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/${inputs.member_id}
+      headings:
+      - Member Detail — ${inputs.member_id}
+      - Identity
+      - Existing Accounts
+      controls:
+      - tag: button
+        type: null
+        name: null
+        text: Back
+      - tag: a
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Back
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Detail — ${inputs.member_id}
+    - Identity
+    - Existing Accounts
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22 Open Sub-Account Back'
+    screenshot: steps/007-before.png
+    observation_hash: sha256:fd3752d4d60f5eef5415169b71367e6f3d7ac63cfe96ed68789581cf3cc24768
+    dom_hash: sha256:8f686176f34efd630bad97675903ad1a722b86deaaefc147c371a0358d7ce986
+    observed_at_ms: 1790300315403
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/${inputs.member_id}
+      headings:
+      - Member Detail — ${inputs.member_id}
+      - Identity
+      - Existing Accounts
+      controls:
+      - tag: button
+        type: null
+        name: null
+        text: Back
+      - tag: a
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Back
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Detail — ${inputs.member_id}
+    - Identity
+    - Existing Accounts
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22 Open Sub-Account Back'
+    screenshot: steps/007-after.png
+    observation_hash: sha256:fd3752d4d60f5eef5415169b71367e6f3d7ac63cfe96ed68789581cf3cc24768
+    dom_hash: sha256:8f686176f34efd630bad97675903ad1a722b86deaaefc147c371a0358d7ce986
+    observed_at_ms: 1790300315495
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 38
+    settled_ms: 91
+  model_reason: Member ${inputs.member_id} (Martinez, J.) found. Opening the member record.
+  error: null
+- index: 8
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 756
+    - 215
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <button> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/members/${inputs.member_id}
+      headings:
+      - Member Detail — ${inputs.member_id}
+      - Identity
+      - Existing Accounts
+      controls:
+      - tag: button
+        type: null
+        name: null
+        text: Back
+      - tag: a
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Open Sub-Account
+      - tag: button
+        type: null
+        name: null
+        text: Back
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Member Detail — ${inputs.member_id}
+    - Identity
+    - Existing Accounts
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22 Open Sub-Account Back'
+    screenshot: steps/008-before.png
+    observation_hash: sha256:fd3752d4d60f5eef5415169b71367e6f3d7ac63cfe96ed68789581cf3cc24768
+    dom_hash: sha256:8f686176f34efd630bad97675903ad1a722b86deaaefc147c371a0358d7ce986
+    observed_at_ms: 1790300315592
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 756
+    - 215
+    frame_path:
+    - servicing-frame
+    role: button
+    role_source: ax_tree
+    accessible_name: Open Sub-Account
+    accessible_name_source: visible_text
+    tag: button
+    hit_tag: button
+    retargeted_from: null
+    role_hint: button
+    name_hint: Open Sub-Account
+    type: null
+    name_attr: null
+    dom_id: null
+    dom_id_stability: null
+    visible_text: Open Sub-Account
+    nearby_label: null
+    placeholder: null
+    title: null
+    value: ''
+    disabled: false
+    visible: true
+    enclosing_region: fieldset
+    enclosing_region_label: Existing Accounts
+    classes:
+    - action-button
+    rect:
+      x: 510
+      y: 159
+      width: 155
+      height: 25
+    candidates:
+    - match_count: 1
+      kind: role
+      role: button
+      name: Open Sub-Account
+      name_source: visible_text
+    - match_count: 1
+      kind: text
+      tag: button
+      text: Open Sub-Account
+    - match_count: 1
+      kind: css
+      selector: a > button.action-button
+      stability: unverified
+    element_fingerprint: sha256:590c7f2809b91e1cac54f61962b77afcbd27ac2a3961d8707e73d6a3964de6eb
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/008-after.png
+    observation_hash: sha256:aa62ffb7198cb2015f27d370b3d91cba08aa18a56e7bcabe2ca93d395c7b832e
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300321229
+    dom_changed: true
+    new_text:
+    - 'Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings) ****-0091 (Checking)
+      I have reviewed the account disclosure and agree to the terms.'
+    - Continue
+    removed_text:
+    - 'Member Detail — ${inputs.member_id} Identity Name: Martinez, J. DOB: **/**/**** Phone: (***) ***-**42
+      Email: ****@***.com Status: Active Back Existing Accounts Acct No Type Balance ****-0042 Savings
+      $5420.50 ****-0091 Checking $1830.22'
+  timing:
+    dispatched_ms: 368
+    settled_ms: 441
+  model_reason: null
+  error: null
+- index: 9
+  actor: automation
+  action:
+    kind: wait
+    duration: 2.0
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/009-before.png
+    observation_hash: sha256:aa62ffb7198cb2015f27d370b3d91cba08aa18a56e7bcabe2ca93d395c7b832e
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300321329
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/009-after.png
+    observation_hash: sha256:aa62ffb7198cb2015f27d370b3d91cba08aa18a56e7bcabe2ca93d395c7b832e
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300323411
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 2012
+    settled_ms: 2086
+  model_reason: null
+  error: null
+- index: 10
+  actor: automation
+  action:
+    kind: screenshot
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/010-before.png
+    observation_hash: sha256:aa62ffb7198cb2015f27d370b3d91cba08aa18a56e7bcabe2ca93d395c7b832e
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300323526
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/010-after.png
+    observation_hash: sha256:aa62ffb7198cb2015f27d370b3d91cba08aa18a56e7bcabe2ca93d395c7b832e
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300323622
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 41
+    settled_ms: 95
+  model_reason: null
+  error: null
+- index: 11
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 738
+    - 124
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <input> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/011-before.png
+    observation_hash: sha256:aa62ffb7198cb2015f27d370b3d91cba08aa18a56e7bcabe2ca93d395c7b832e
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300323731
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 738
+    - 124
+    frame_path:
+    - servicing-frame
+    role: textbox
+    role_source: ax_tree
+    accessible_name: $0.00
+    accessible_name_source: placeholder
+    tag: input
+    hit_tag: input
+    retargeted_from: null
+    role_hint: textbox
+    name_hint: null
+    type: text
+    name_attr: opening_amount
+    dom_id: amt_d955786b
+    dom_id_stability: generated
+    visible_text: null
+    nearby_label: Opening Amount
+    placeholder: $0.00
+    title: null
+    value: ''
+    disabled: false
+    visible: true
+    enclosing_region: form#open-account-form
+    enclosing_region_label: null
+    classes: []
+    rect:
+      x: 480
+      y: 70
+      width: 179
+      height: 21
+    candidates:
+    - match_count: 1
+      kind: contextual_text
+      anchor: Opening Amount
+      relative: input
+    - match_count: 1
+      kind: attribute
+      selector: input[name="opening_amount"]
+      attribute: name
+      value: opening_amount
+    - match_count: 1
+      kind: css
+      selector: '#open-account-form table.form-table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) >
+        input'
+      stability: unverified
+    - match_count: null
+      kind: role
+      role: textbox
+      name: $0.00
+      name_source: placeholder
+    element_fingerprint: sha256:197e633859afe485f4cb7992de1915d10a129e3eeae9bca9721ac8f630a20a96
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/011-after.png
+    observation_hash: sha256:9bf36a1f739eca9ce3320193ee2e713a50baf7ced14be582efe7928be8220f02
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300332997
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 373
+    settled_ms: 452
+  model_reason: null
+  error: null
+- index: 12
+  actor: automation
+  action:
+    kind: type
+    text: ${inputs.opening_amount}
+  policy:
+    decision: allow
+    risk: reversible
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ''
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/012-before.png
+    observation_hash: sha256:9bf36a1f739eca9ce3320193ee2e713a50baf7ced14be582efe7928be8220f02
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300333126
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/012-after.png
+    observation_hash: sha256:595f085b5a6d3290eb30822faca3b93b9cc9332334dbc274a7fe3590afcbd117
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300333495
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 298
+    settled_ms: 376
+  model_reason: null
+  error: null
+- index: 13
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 694
+    - 212
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <button> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue'
+    screenshot: steps/013-before.png
+    observation_hash: sha256:595f085b5a6d3290eb30822faca3b93b9cc9332334dbc274a7fe3590afcbd117
+    dom_hash: sha256:88710b6bf8e69e74776786ccdc128e07fa9f73d69bc8f57e3a5f1a94e582df45
+    observed_at_ms: 1790300333627
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 694
+    - 212
+    frame_path:
+    - servicing-frame
+    role: button
+    role_source: ax_tree
+    accessible_name: Continue
+    accessible_name_source: visible_text
+    tag: button
+    hit_tag: button
+    retargeted_from: null
+    role_hint: button
+    name_hint: Continue
+    type: submit
+    name_attr: null
+    dom_id: null
+    dom_id_stability: null
+    visible_text: Continue
+    nearby_label: Back
+    placeholder: null
+    title: null
+    value: ''
+    disabled: false
+    visible: true
+    enclosing_region: form#open-account-form
+    enclosing_region_label: null
+    classes:
+    - action-button
+    rect:
+      x: 480
+      y: 156
+      width: 92
+      height: 25
+    candidates:
+    - match_count: 1
+      kind: role
+      role: button
+      name: Continue
+      name_source: visible_text
+    - match_count: 1
+      kind: text
+      tag: button
+      text: Continue
+    - match_count: 1
+      kind: contextual_text
+      anchor: Back
+      relative: button
+    - match_count: 1
+      kind: css
+      selector: '#open-account-form table.form-table > tbody > tr:nth-of-type(5) > td.right-align:nth-of-type(2)
+        > button.action-button'
+      stability: unverified
+    element_fingerprint: sha256:c92d2f18b53f95fdb3d89e573fc9ca87092f59e9b00c0fc9271c1e55808427c3
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/013-after.png
+    observation_hash: sha256:0a6356639e4fdc4a93e18d7f74574008595514c9615ea866f2f653e4de82da7f
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300334086
+    dom_changed: true
+    new_text:
+    - You must accept the account disclosure to continue.
+    removed_text: []
+  timing:
+    dispatched_ms: 372
+    settled_ms: 448
+  model_reason: null
+  error: null
+- index: 14
+  actor: automation
+  action:
+    kind: wait
+    duration: 2.0
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/014-before.png
+    observation_hash: sha256:0a6356639e4fdc4a93e18d7f74574008595514c9615ea866f2f653e4de82da7f
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300334227
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/014-after.png
+    observation_hash: sha256:0a6356639e4fdc4a93e18d7f74574008595514c9615ea866f2f653e4de82da7f
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300336311
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 2010
+    settled_ms: 2086
+  model_reason: null
+  error: null
+- index: 15
+  actor: automation
+  action:
+    kind: screenshot
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/015-before.png
+    observation_hash: sha256:0a6356639e4fdc4a93e18d7f74574008595514c9615ea866f2f653e4de82da7f
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300336450
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/015-after.png
+    observation_hash: sha256:0a6356639e4fdc4a93e18d7f74574008595514c9615ea866f2f653e4de82da7f
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300336541
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 38
+    settled_ms: 90
+  model_reason: null
+  error: null
+- index: 16
+  actor: human
+  action:
+    kind: human_intervention
+    intervention_id: int_8527c6ac
+    reason: MODEL_REQUESTED
+    operator: you
+    context: null
+  policy: null
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/016-before.png
+    observation_hash: sha256:0a6356639e4fdc4a93e18d7f74574008595514c9615ea866f2f653e4de82da7f
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300336670
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: a human acted; no coordinate was proposed
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/016-after.png
+    observation_hash: sha256:02f5bfc242c07e9357a52659d17c608f8cf31d1849a829f0687d33f23fa2aadb
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300380676
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: null
+    settled_ms: null
+  model_reason: 'human intervention: MODEL_REQUESTED'
+  error: null
+- index: 17
+  actor: automation
+  action:
+    kind: left_click
+    coordinate:
+    - 694
+    - 212
+    text: null
+  policy:
+    decision: allow
+    risk: reversible
+    rule: risk_classification
+    code: null
+    detail: <button> is not a committing control
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+    dialogs: []
+    overlays: []
+    banners:
+    - You must accept the account disclosure to continue.
+    headings:
+    - Open Sub-Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      You must accept the account disclosure to continue.'
+    screenshot: steps/017-before.png
+    observation_hash: sha256:02f5bfc242c07e9357a52659d17c608f8cf31d1849a829f0687d33f23fa2aadb
+    dom_hash: sha256:1f40447f6b3d97bacbf1ebfc47580257c11516e05503ba7566f18101c2d2286a
+    observed_at_ms: 1790300380827
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe:
+    coordinate:
+    - 694
+    - 212
+    frame_path:
+    - servicing-frame
+    role: button
+    role_source: ax_tree
+    accessible_name: Continue
+    accessible_name_source: visible_text
+    tag: button
+    hit_tag: button
+    retargeted_from: null
+    role_hint: button
+    name_hint: Continue
+    type: submit
+    name_attr: null
+    dom_id: null
+    dom_id_stability: null
+    visible_text: Continue
+    nearby_label: Back
+    placeholder: null
+    title: null
+    value: ''
+    disabled: false
+    visible: true
+    enclosing_region: form#open-account-form
+    enclosing_region_label: null
+    classes:
+    - action-button
+    rect:
+      x: 480
+      y: 156
+      width: 92
+      height: 25
+    candidates:
+    - match_count: 1
+      kind: role
+      role: button
+      name: Continue
+      name_source: visible_text
+    - match_count: 1
+      kind: text
+      tag: button
+      text: Continue
+    - match_count: 1
+      kind: contextual_text
+      anchor: Back
+      relative: button
+    - match_count: 1
+      kind: css
+      selector: '#open-account-form table.form-table > tbody > tr:nth-of-type(5) > td.right-align:nth-of-type(2)
+        > button.action-button'
+      stability: unverified
+    element_fingerprint: sha256:c92d2f18b53f95fdb3d89e573fc9ca87092f59e9b00c0fc9271c1e55808427c3
+  probe_unavailable: null
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - ⚠ System Notice
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: OK
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs:
+    - selector: modal-overlay
+      text: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+        Reference: ERR-APP_13 OK'
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - ⚠ System Notice
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      ⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/017-after.png
+    observation_hash: sha256:a07f33cf03d50d73eeefe1cbc89f013cc0824d5330fa179a1895893cd04cad15
+    dom_hash: sha256:cddc29a2bb858a78223ac5f9e15321a0d62621157a21e3ab6ca2f5bc42b46f9c
+    observed_at_ms: 1790300389962
+    dom_changed: true
+    new_text:
+    - '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before p'
+    removed_text:
+    - You must accept the account disclosure to continue.
+  timing:
+    dispatched_ms: 370
+    settled_ms: 450
+  model_reason: The operator has ticked the disclosure box. Continuing to the review screen.
+  error: null
+- index: 18
+  actor: automation
+  action:
+    kind: wait
+    duration: 2.0
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - ⚠ System Notice
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: OK
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs:
+    - selector: modal-overlay
+      text: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+        Reference: ERR-APP_13 OK'
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - ⚠ System Notice
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      ⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/018-before.png
+    observation_hash: sha256:a07f33cf03d50d73eeefe1cbc89f013cc0824d5330fa179a1895893cd04cad15
+    dom_hash: sha256:cddc29a2bb858a78223ac5f9e15321a0d62621157a21e3ab6ca2f5bc42b46f9c
+    observed_at_ms: 1790300390117
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - ⚠ System Notice
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: OK
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs:
+    - selector: modal-overlay
+      text: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+        Reference: ERR-APP_13 OK'
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - ⚠ System Notice
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      ⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/018-after.png
+    observation_hash: sha256:a07f33cf03d50d73eeefe1cbc89f013cc0824d5330fa179a1895893cd04cad15
+    dom_hash: sha256:cddc29a2bb858a78223ac5f9e15321a0d62621157a21e3ab6ca2f5bc42b46f9c
+    observed_at_ms: 1790300392236
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 2052
+    settled_ms: 2121
+  model_reason: The operator has ticked the disclosure box. Continuing to the review screen.
+  error: null
+- index: 19
+  actor: automation
+  action:
+    kind: screenshot
+  policy:
+    decision: allow
+    risk: read_only
+    rule: action_allowlist
+    code: null
+    detail: within vocabulary
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - ⚠ System Notice
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: OK
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs:
+    - selector: modal-overlay
+      text: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+        Reference: ERR-APP_13 OK'
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - ⚠ System Notice
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      ⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/019-before.png
+    observation_hash: sha256:a07f33cf03d50d73eeefe1cbc89f013cc0824d5330fa179a1895893cd04cad15
+    dom_hash: sha256:cddc29a2bb858a78223ac5f9e15321a0d62621157a21e3ab6ca2f5bc42b46f9c
+    observed_at_ms: 1790300392426
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: action carries no target coordinate
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - ⚠ System Notice
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: OK
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs:
+    - selector: modal-overlay
+      text: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+        Reference: ERR-APP_13 OK'
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - ⚠ System Notice
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      ⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/019-after.png
+    observation_hash: sha256:a07f33cf03d50d73eeefe1cbc89f013cc0824d5330fa179a1895893cd04cad15
+    dom_hash: sha256:cddc29a2bb858a78223ac5f9e15321a0d62621157a21e3ab6ca2f5bc42b46f9c
+    observed_at_ms: 1790300392529
+    dom_changed: false
+    new_text: []
+    removed_text: []
+  timing:
+    dispatched_ms: 42
+    settled_ms: 100
+  model_reason: The operator has ticked the disclosure box. Continuing to the review screen.
+  error: null
+- index: 20
+  actor: human
+  action:
+    kind: human_intervention
+    intervention_id: int_167ae293
+    reason: UNKNOWN_DIALOG
+    operator: you
+    context: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK'
+  policy: null
+  observation_before:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - ⚠ System Notice
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: OK
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs:
+    - selector: modal-overlay
+      text: '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+        Reference: ERR-APP_13 OK'
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - ⚠ System Notice
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      ⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK Review New Account Member: ${inputs.member_id} Account Type: Savings Opening
+      Amount: $${inputs.opening_amount} Funding Source: ****-0042 ⚠ WARNING: This action will open a new
+      account. Verify all details before proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/020-before.png
+    observation_hash: sha256:a07f33cf03d50d73eeefe1cbc89f013cc0824d5330fa179a1895893cd04cad15
+    dom_hash: sha256:cddc29a2bb858a78223ac5f9e15321a0d62621157a21e3ab6ca2f5bc42b46f9c
+    observed_at_ms: 1790300392686
+    dom_changed: null
+    new_text: []
+    removed_text: []
+  probe: null
+  probe_unavailable: a human acted; no coordinate was proposed
+  observation_after:
+    main_frame_url: http://bank-sim:8001/
+    title: Credit Union Servicing Portal
+    frames:
+    - path: []
+      url: http://bank-sim:8001/
+      headings: []
+      controls:
+      - tag: a
+        type: null
+        name: null
+        text: Members
+      - tag: a
+        type: null
+        name: null
+        text: Accounts
+      - tag: a
+        type: null
+        name: null
+        text: Reports
+      - tag: a
+        type: null
+        name: null
+        text: Admin
+    - path:
+      - servicing-frame
+      url: http://bank-sim:8001/servicing/accounts/open?member_id=${inputs.member_id}
+      headings:
+      - Open Sub-Account
+      - Review New Account
+      controls:
+      - tag: select
+        type: null
+        name: account_type
+        text: Savings Checking
+      - tag: input
+        type: text
+        name: opening_amount
+        text: ${inputs.opening_amount}
+      - tag: select
+        type: null
+        name: funding_account_id
+        text: '****-0042 (Savings) ****-0091 (Checking)'
+      - tag: input
+        type: checkbox
+        name: disclosure_accepted
+        text: '1'
+      - tag: button
+        type: button
+        name: null
+        text: Back
+      - tag: button
+        type: submit
+        name: null
+        text: Continue
+      - tag: button
+        type: null
+        name: null
+        text: ''
+      - tag: button
+        type: null
+        name: null
+        text: Edit
+      - tag: button
+        type: submit
+        name: null
+        text: Open Account
+    dialogs: []
+    overlays: []
+    banners: []
+    headings:
+    - Open Sub-Account
+    - Review New Account
+    visible_text: 'Credit Union Servicing Portal User: Teller1 | Branch: Main Members Accounts Reports
+      Admin
+
+      Open Sub-Account Account Type: Savings Checking Opening Amount: Funding Source: ****-0042 (Savings)
+      ****-0091 (Checking) I have reviewed the account disclosure and agree to the terms. Back Continue
+      Review New Account Member: ${inputs.member_id} Account Type: Savings Opening Amount: $${inputs.opening_amount}
+      Funding Source: ****-0042 ⚠ WARNING: This action will open a new account. Verify all details before
+      proceeding. This cannot be undone. Edit Open Account'
+    screenshot: steps/020-after.png
+    observation_hash: sha256:f7c21321e4ac8eec50c61cabc9f05f50ce4c4b3755402319a8613392245a1130
+    dom_hash: sha256:ad27322085bcc1320d377aa0b95e7b3b40c5646ddada15e9da420a3535501208
+    observed_at_ms: 1790300424905
+    dom_changed: true
+    new_text: []
+    removed_text:
+    - '⚠ System Notice An unexpected condition was detected. Please contact your system administrator.
+      Reference: ERR-APP_13 OK'
+  timing:
+    dispatched_ms: null
+    settled_ms: null
+  model_reason: 'human intervention: UNKNOWN_DIALOG'
+  error: null
+outcome:
+  run_id: run_20260925_013816_266d
+  stop_reason: CHECKPOINT_VERIFIED
+  steps_used: 21
+  status: success
+  outputs:
+    Member: ${inputs.member_id} (Martinez, J., Active)
+    Account Type: Savings
+    Opening Amount: $${inputs.opening_amount}
+    Funding Source: '****-0042'
+    Warning shown: This action will open a new account. Verify all details before proceeding. This cannot
+      be undone.
+    Note: 'A ''System Notice'' dialog (Reference: ERR-APP_13) appeared over the review screen after Continue;
+      it was dismissed and the review details rendered correctly.'
+  checkpoint_verified: true
+budget:
+  max_steps: 30
+  wall_clock_s: 600.0
+  input_tokens: 156037
+  output_tokens: 1794
+  usd_estimate: 0.836561

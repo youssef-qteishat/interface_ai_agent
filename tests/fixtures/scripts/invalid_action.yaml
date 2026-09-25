@@ -1,0 +1,10 @@
+# Exercises the invalid path: a disabled member, and a malformed coordinate. Neither
+# should ever reach the surface.
+- reason: "ask for things outside the vocabulary"
+  actions:
+    - {kind: screenshot}
+  invalid:
+    - {kind: left_click_drag, start_coordinate: [1, 1], coordinate: [2, 2]}
+    - {kind: left_click, coordinate: [-5, 10]}
+- actions:
+    - {kind: cannot_proceed, reason: "gave up after being refused"}

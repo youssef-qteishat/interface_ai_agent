@@ -75,7 +75,12 @@
     </table>
   </form>
 
-  <!-- Icon-only refresh button: no visible text, no aria-label -->
+  <!-- Icon-only refresh button: no visible text, no aria-label.
+       The empty alt/title are deliberate — this is the one control with no accessible
+       name, so finding it requires looking at pixels. width/height are presentational
+       only: the source PNG is 512x512, and unconstrained it pushed the review panel
+       off-screen. They also reserve the box before the image loads, so the layout
+       does not shift under a running automation. -->
   <button
     class="icon-only-button"
     id="icon_{{ suffix }}"
@@ -84,7 +89,7 @@
     hx-swap="outerHTML"
     title=""
   >
-    <img src="/static/icons/refresh.png" alt="" />
+    <img src="/static/icons/refresh.png" alt="" width="16" height="16" />
   </button>
 
   <div id="form-loading" class="overlay htmx-indicator">

@@ -1,0 +1,73 @@
+# A handoff, model-free: drive to the disclosure checkbox, ask for a human, then finish.
+#
+# This mirrors what the real model does — it fills the sub-account form, finds Continue
+# blocked by an attestation it will not tick on a member's behalf, and calls
+# `request_human`. The difference is that this costs nothing, so the whole control
+# transfer can be exercised end to end before a paid run.
+#
+# It exists because the first real capture parked for a human and the handoff could not
+# be completed: `session accept` looked for the intervention under a folder named after
+# the run id, while `--evidence-dir` had put it somewhere else. Nothing tested a park
+# and a custom evidence dir together. This script does.
+#
+# Run it with:
+#   discover --provider fake --script tests/fixtures/scripts/handoff.yaml \
+#            --evidence-dir evidence/handoff-fake --overwrite
+
+- reason: "reset to the search page via the app's own nav"
+  actions:
+    - { kind: left_click, coordinate: [46, 58] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "enter the member id and search"
+  actions:
+    - { kind: left_click, coordinate: [550, 96] }
+    - { kind: type, text: "12345" }
+    - { kind: key, text: "Return" }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "open the result row to reach Member Detail"
+  actions:
+    - { kind: left_click, coordinate: [360, 148] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "start a sub-account for this member"
+  actions:
+    - { kind: left_click, coordinate: [757, 215] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "fill the opening amount and try to continue"
+  actions:
+    - { kind: left_click, coordinate: [739, 124] }
+    - { kind: type, text: "25.00" }
+    - { kind: left_click, coordinate: [695, 212] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+# The park. Everything after this turn runs only once a human has handed control back.
+- reason: "Continue is blocked by a required attestation; a human must decide"
+  actions:
+    - kind: request_human
+      reason: >-
+        The form will not continue without ticking "I have reviewed the account
+        disclosure and agree to the terms." Accepting a disclosure on a member's behalf
+        is not mine to do.
+
+- reason: "the operator accepted the disclosure; continue to review"
+  actions:
+    - { kind: left_click, coordinate: [695, 212] }
+    - { kind: wait, duration: 2.0 }
+    - { kind: screenshot }
+
+- reason: "the review screen is up; stop here without submitting"
+  actions:
+    - kind: goal_complete
+      summary: "Reached the review screen after a human accepted the disclosure."
+      outputs:
+        account_type: "Savings"
+        opening_amount: "25.00"
+        submitted: "no"

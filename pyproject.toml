@@ -28,6 +28,9 @@ package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.0"
+# The surface adapter and the pause barrier are async (the barrier has to interrupt a
+# run between actions), so their tests need an event loop.
+pytest-asyncio = ">=0.24"
 
 [tool.pytest.ini_options]
 # The project is not installed as a package (the sim and the orchestrator are just
@@ -35,6 +38,8 @@ pytest = ">=8.0"
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-q"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

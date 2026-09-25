@@ -204,10 +204,15 @@ OBSERVE_JS = """
     const st = getComputedStyle(n);
     return st.visibility !== 'hidden' && st.display !== 'none' && st.opacity !== '0';
   };
-  const dialogs = Array.from(
-    document.querySelectorAll('.modal-overlay, .modal-box, [role=dialog], dialog[open]')
-  ).filter(visible).map((n) => ({ selector: n.className || n.tagName.toLowerCase(),
-                                  text: clean(n.innerText).slice(0, 400) }));
+  // A modal is an overlay containing a box, and both match — so report only the
+  // outermost, or one dialog would be counted twice and a caller asking "is there a
+  // dialog?" would get a misleading count.
+  const dialogSel = '.modal-overlay, .modal-box, [role=dialog], dialog[open]';
+  const dialogNodes = Array.from(document.querySelectorAll(dialogSel)).filter(visible);
+  const dialogs = dialogNodes
+    .filter((n) => !dialogNodes.some((other) => other !== n && other.contains(n)))
+    .map((n) => ({ selector: n.className || n.tagName.toLowerCase(),
+                   text: clean(n.innerText).slice(0, 400) }));
   const overlays = Array.from(document.querySelectorAll('.overlay, .loading-overlay, .spinner'))
     .filter(visible).map((n) => clean(n.innerText).slice(0, 120) || n.className);
   const banners = Array.from(document.querySelectorAll('.warning-banner, .error-banner, .info-banner'))

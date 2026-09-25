@@ -294,7 +294,18 @@ this turn failed."` Return **all** results in a single user message.
 - Assistant prefill is unavailable on Opus 5. Shape output with tool schemas, not prefill.
 - Mid-conversation `{"role": "system", ...}` messages are supported on Opus 5 and are the right channel
   for operator notes after a human handoff ("a human acted; re-observe before continuing") — they carry
-  operator authority and don't invalidate the cached prefix.
+  operator authority and don't invalidate the cached prefix. **But their position is constrained**, and
+  the constraint is not obvious: a content-carrying system message must *precede an assistant message
+  or end the array*. Appending one straight after the tool results of a handed-off turn puts it between
+  two user messages and returns
+
+  > `messages.15: role 'system' must precede an 'assistant' message or end the array; the
+  > directive-only form (content: [] with output_config) is accepted at any position`
+
+  Discovered by a live handoff in Step 12, which is exactly the expensive place to discover it. The
+  note is therefore *queued* and appended after the next user turn, so it ends the array for that
+  request and precedes an assistant turn for every request after. Consecutive `user` messages are
+  fine — the tool-result turn and the next instruction turn are already two in a row.
 
 ---
 
@@ -453,9 +464,16 @@ budget:
 
 Three rules that make this trace worth having:
 
-1. **`match_count` is recorded during the run, not guessed later.** A candidate that matched twice
-   (`"Continue"` appears twice on the form by design) is demoted by the canonicalizer instead of
-   silently becoming a flaky locator.
+1. **`match_count` is recorded during the run, not guessed later.** A candidate that matched twice is
+   demoted by the canonicalizer instead of silently becoming a flaky locator.
+
+   > **Corrected in Step 12.** The sketch above uses `Continue` as the duplicated control. It is not
+   > one — `Continue` probes as `match_count: 1`. The control that is actually duplicated is Member
+   > Detail's pair of identical `Back` buttons, where `role`, `text` and `css` all report
+   > `match_count: 2` and `is_ambiguous` is true. Worse, no trace on disk carried an ambiguous
+   > candidate at all until Step 12, because `drive` probed `Back` outside the recorded-step path and
+   > only printed it to the console — so this rule, the headline argument for recording during the run,
+   > was evidenced by nothing. `tests/fixtures/live_probe_ambiguous.json` is the captured payload.
 2. **Coordinates never become primary locators.** They stay in `action` as evidence; the artifact's
    target comes from `probe.candidates`.
 3. **The probe is optional by contract.** On a surface with no probe (the Tkinter mock), steps carry
@@ -471,6 +489,20 @@ Three rules that make this trace worth having:
 plus `visible_text` and `dom_hash` on observations. The first version of `Observation` was modelled on
 this sketch and was missing `visible_text` — caught only by validating a live payload, which is why
 Step 4's verification ends with exactly that check.
+
+**Amended in Step 12**, to make room for the human as a recorded actor:
+
+- **`RecordedStep.policy` is now optional, and required exactly where it means something.** A model
+  validator demands it for `actor: "automation"` and *forbids* it for `actor: "human"`. Nobody ran the
+  allowlist against what an operator did with their own hands, and a synthesised `allow` would let the
+  recorder's assertion "every step has a policy decision" be satisfied by a lie.
+- **`RecordedStep.action` may hold a `HumanIntervention`**, which is deliberately outside the agent
+  action union — no tool schema, rejected by `parse_action`. The model cannot propose one by
+  construction rather than by convention. It carries the intervention id, the reason, the operator and
+  the context; it does **not** claim to know what the human clicked, because nobody watched them.
+- **`Observation.removed_text`** joins `new_text`. A live handoff dismissed a modal and the step
+  recorded `dom_changed: true` with an empty `new_text`, describing the only thing that happened as
+  nothing at all: the event was entirely a disappearance.
 
 ---
 
@@ -714,14 +746,25 @@ the icon-only button shows `retargeted_from: "img"` and only a structural candid
 
 ### Findings that affect later steps
 
-1. **The `dialog` fault profile is inert.** `.modal-overlay` exists in both stylesheets but **no
-   template renders it**, so `fault set dialog` changes nothing on screen. `/probe/observe` scans for
-   it and will simply report none. Step 8's escalation demo and §10's unknown-modal path both need
-   that template work first — the one place §12.10's "Dockerfile only" rule has to be relaxed.
-2. **`static/icons/refresh.png` now exists but renders unconstrained** — roughly 515x515 px,
-   dominating the form and pushing layout around. `.icon-only-button img` needs a width/height in
-   `servicing.css`. It is supposed to be a *small* icon-only control; at this size it is not the
-   discovery challenge it was meant to be.
+1. ~~**The `dialog` fault profile is inert.**~~ **FIXED in Step 8.** `.modal-overlay` existed in both
+   stylesheets but no template rendered it, so `fault set dialog` had always been a no-op — which
+   made Step 8's own manual test un-runnable and §10's unknown-modal path untestable. Added the modal
+   block the design doc §7.4 specifies to `_review_panel.html` (the second deliberate §12.10
+   exception). Verified live: the modal dims the page, `/probe/observe` reports exactly one dialog,
+   and the loop escalates on it.
+2. ~~**`static/icons/refresh.png` renders unconstrained at ~515x515.**~~ **FIXED.** The source PNG is
+   512x512 intrinsic and nothing constrained it, so the icon-only button pushed the whole review panel
+   **below the fold** — after Continue, the screen showed a giant arrow while `Review New Account`, the
+   details, and the irreversible button sat off-screen. That would have failed Step 11's checkpoint on
+   a screenshot even when the workflow succeeded, and put a decorative arrow in Step 14's evidence.
+   Fixed by adding `width="16" height="16"` to the `<img>` in `open_subaccount.html` (the design doc
+   specified 16x16 at line 1241; the file was failing its own spec). Attributes rather than CSS: no
+   rule sets image dimensions, and attributes also reserve the box before load so the layout cannot
+   shift under a running automation. `alt=""`/`title=""` were left untouched — **verified afterwards
+   that the control is still nameless** (`accessible_name: None`, only a structural candidate,
+   `retargeted_from: "img"`), now at 22x25 px. Sizing it was presentational; adding alt text would have
+   silently deleted the coordinate-discovery test case. This is the one deliberate exception to
+   §12.10's "Dockerfile only" rule.
 3. **Stale X lock (fixed in Step 2's entrypoint).** After the container was killed hard, a leftover
    `/tmp/.X99-lock` made Xvfb refuse to start ever again with "Server is already active for display
    99". The entrypoint now removes the lock when no X server answers on that display. Worth knowing
@@ -919,21 +962,79 @@ Side-by-side is the intended way to watch: terminal on one half, noVNC on the ot
 
 Enforced in code, outside the prompt, on **every** action in both modes.
 
-- [ ] Action allowlist: reject any `kind` not in the Step 0 vocabulary, before it reaches the adapter.
-- [ ] Origin/frame allowlist: after each observation, every frame URL must match
-      `http://bank-sim:8001` and a permitted route prefix. `/dev/` is denied outright — the model must
-      not be able to change its own fault conditions.
-- [ ] Risk classes per action and per target: a click whose probe reports accessible name
-      `Open Account` (or which lands inside `.review-actions .danger-button`) is `irreversible` and is
-      **denied without an approval token**, returning a `tool_result` that says so. This is a real
-      demo: the model can see the button and cannot press it.
-- [ ] Typed input guard: `type` text is checked against the declared inputs — the model may type
-      `${inputs.member_id}`'s value, not arbitrary strings into arbitrary fields.
-- [ ] Every decision is returned as a `PolicyDecision` and lands in the trace, allow or deny.
+**Structural correction — policy runs in two phases.** This step's ordering as originally written could
+never work: risk is classified *by target* ("a click whose probe reports accessible name `Open
+Account`"), but Step 11 ran policy **before** the probe, so the irreversible rule could never fire — an
+engine that looks right and enforces nothing. `src/policy/engine.py` therefore has two entry points,
+and Step 11's order below is amended to match:
 
-**Verification:** unit tests — a `left_click` on the finalize button is denied with
-`IRREVERSIBLE_REQUIRES_APPROVAL`; a frame URL of `http://bank-sim:8001/dev/fault-profile` denies with
-`ROUTE_NOT_ALLOWED`; an unknown action kind never reaches a stubbed adapter.
+```
+validate schema → check_action(action, observation) → probe() → check_target(action, probe) → execute
+```
+
+Not a workaround: some refusals are knowable from the URL alone, others only from the element under the
+cursor. Both phases return a `PolicyDecision` and both are recorded.
+
+- [x] Action allowlist: reject any `kind` not in the Step 0 vocabulary, before it reaches the adapter.
+      Deliberately redundant with Step 4's schema — two independent gates, so a schema gap and a policy
+      misconfiguration must *both* fail for an out-of-vocabulary action to run.
+- [x] Origin/frame allowlist: **every** frame URL is checked, not just the main document. The workflow
+      lives in an iframe, so checking only the top frame would check the one URL that never changes
+      during a run. `/dev/` is denied outright — and per Step 1, the network does *not* block those
+      routes, so this rule is the control rather than a second belt.
+- [x] Risk classes per action and per target. The irreversible control is matched on **two independent
+      signals** — accessible name `Open Account` *or* class `danger-button` — because either alone is
+      brittle: the tenant_b theme renames the label, and a CSS refactor renames the class.
+      **Decision: `decision="escalate"`, not `"deny"`**, with `code=IRREVERSIBLE_REQUIRES_APPROVAL`.
+      `deny` stays reserved for what nothing can authorize (`/dev/`, out-of-vocabulary actions), so the
+      controller can tell "a human could allow this" from "never" without parsing code strings. Step 4
+      had already filed that code under `EscalationReason` rather than `FailureCode`.
+- [x] Typed input guard: `type` text must **exactly** equal a declared input value. This is the
+      project's crispest prompt-injection story — a page that says "type your API key here" cannot
+      execute, because the key was never a declared input. The refusal detail deliberately does **not**
+      echo the rejected text, since that text may be precisely the secret being fished for.
+- [x] Approval tokens are bound to `sha256(action)`, plus run and expiry. Approving one click therefore
+      authorizes that click and nothing else — otherwise "approval" would just mean the engine is off
+      for a while.
+- [x] Every decision is returned as a `PolicyDecision` and lands in the trace, allow or deny.
+
+**Verification (all passed).** `tests/test_policy.py` — 26 tests, offline, including: a refused action
+**never reaches a stubbed adapter** (proving the gate sits before dispatch, not as a label attached
+after); `/dev/` denied when it appears only in a *child* frame; a valid token allowing the exact click;
+the same token refused for a different click; an expired token and a token from another run both
+refused; and no decision detail echoing a rejected secret. Full suite: **81 passed**.
+
+Then the check that matters — driven live to the review screen and fed the **real** probe:
+
+```text
+=== checkpoint text visible WITHOUT scrolling ===
+  'Review New Account' present: True | 'Savings': True | '$25.00': True
+=== Open Account @ (246, 447) ===
+  probe : <button> name='Open Account' classes=['danger-button']
+  phase2: escalate risk=irreversible code=IRREVERSIBLE_REQUIRES_APPROVAL
+=== Edit @ (207, 422) ===            <- the button right beside it
+  phase2: allow    risk=reversible
+=== Open Account WITH approval token ===  allow via approval_token
+=== same token, different action ===      escalate
+```
+
+The `Edit` line matters as much as the `Open Account` one: it shows the rule discriminates rather than
+blanket-refusing everything on the review screen.
+
+(The first run of this check needed a `Scroll` to reach the button, because the oversized refresh icon
+pushed the review panel off-screen. That is now fixed — see finding 2 — and the coordinates above are
+the post-fix ones.)
+
+### Manual verification
+
+```bash
+poetry run pytest tests/test_policy.py -v
+
+# Live: drive to review, probe the button, ask the engine.
+docker compose up -d
+# search 12345 -> detail -> Open Sub-Account -> amount 25.00 -> disclosure -> Continue
+# then probe ~(246, 447) for Open Account and ~(207, 422) for Edit — no scroll needed.
+```
 
 ---
 
@@ -941,14 +1042,68 @@ Enforced in code, outside the prompt, on **every** action in both modes.
 
 **Owner:** Claude Code · **Time:** 45 min
 
-- [ ] `redact_event(event) -> event` applied **before** serialization, not as a cleanup pass.
-- [ ] Mask member IDs (`12345` → `1***5`), typed field values, and any `Authorization`/`Cookie`-shaped
-      strings. Keep amounts visible (they are needed to read the trace) and say so in the report.
-- [ ] Screenshots are stored unmodified; justify it in one line: the simulator holds only synthetic
-      data, and masking pixels would destroy the evidence value. Note where a region-mask hook would go.
+- [x] `redact_event(event) -> event` applied **before** serialization, not as a cleanup pass. The
+      redactor walks structures recursively rather than field-by-field, because on the review screen
+      the member id appears in the URL, a heading, the panel text and the action payload
+      *simultaneously* — a field list would miss most of them and would need updating every time the
+      trace grows a field.
+- [x] **Key decision: a declared input redacts to its own placeholder, not to a mask.** Masking
+      `12345` → `1***5` would have quietly broken the canonicalizer, whose entire job is to find
+      literal input values in `trace.yaml` and replace them with `${inputs.*}`. Redacting to
+      `${inputs.member_id}` loses nothing, and the trace comes out safe *and* already half
+      canonicalized:
 
-**Verification:** a test asserting no raw seeded member ID appears anywhere in
-`events.redacted.jsonl` after a fake-provider run.
+      ```
+      12345        -> ${inputs.member_id}     # declared input
+      23456        -> 2***6                   # another member from search results
+      Bearer eyJ…  -> ***REDACTED***          # never an input, never readable
+      $5420.50     -> $5420.50                # undeclared amounts stay readable
+      ```
+
+      Rule order is load-bearing: declared values run **first** (longest value first, so a shorter
+      value cannot chew a hole inside a longer one), then secrets, then the generic `\b\d{5}\b`
+      member-id shape. Reversing the first two would mask `12345` before the placeholder rule could
+      claim it.
+- [x] Amounts: an amount the run **declared** is claimed by the placeholder rule
+      (`$25.00` → `$${inputs.opening_amount}`), which is what the artifact needs — otherwise the
+      capability would hardcode 25.00 rather than parameterize it. That is not a loss of readability
+      the way a mask is: a reader sees a named parameter. Amounts the run did *not* declare (account
+      balances) stay readable by default, with `mask_amounts=True` for a deployment that disagrees.
+- [x] Idempotent, and hashes untouched: `observation_hash`/`dom_hash` were computed from the real
+      bytes, which is what makes them useful for change detection, and a digest is not a disclosure.
+- [x] Screenshots are stored unmodified. Justification for the report: **the PNG beside the redacted
+      log shows `12345` in plain pixels, and that is deliberate.** Masking it would be worse — the
+      screenshot is how a reviewer confirms the run did what the log claims, and a blurred one proves
+      nothing. The simulator holds only synthetic data, so there is nothing to protect. The hook for a
+      deployment that does need it: `X11ComputerAdapter._write_png` is the single choke point every
+      screenshot passes through, and `ProbeResult.rect` already carries the pixel box of each field —
+      so region masking is a Pillow rectangle draw there, driven by probe data the trace already
+      collects.
+
+**Known limitation (deliberate).** Matching is case-sensitive, so a declared `account_type: "savings"`
+is *not* substituted where the page renders `Savings`. Left as-is on purpose: case-insensitive
+replacement of a common word would corrupt unrelated prose (`"Savings Account Options"` →
+`"${inputs.account_type} Account Options"`), and `account_type` is not sensitive. The canonicalizer
+should parameterize it from the **action payload** — where the select's value is exactly `savings` —
+rather than by string-matching rendered display text.
+
+**Verification (all passed).** `tests/test_redaction.py` — 25 tests, offline; full suite **106
+passed**. The criterion the step names is checked against a payload captured from the real agent, not
+a hand-written string. Then live, against an actual observation of the review screen:
+
+```text
+BEFORE  url : .../accounts/open?member_id=12345
+        text: Review New Account Member: 12345 … Opening Amount: $25.00
+AFTER   url : .../accounts/open?member_id=${inputs.member_id}
+        text: Review New Account Member: ${inputs.member_id} … Opening Amount: $${inputs.opening_amount}
+
+raw 12345 present after redaction : False
+leak detector (names only)        : []
+dom_hash unchanged                : True
+```
+
+The leak detector returns input **names**, never values — a detector that prints the secret it found
+would be a poor one.
 
 ---
 
@@ -958,18 +1113,124 @@ Enforced in code, outside the prompt, on **every** action in both modes.
 
 Small now, very expensive later.
 
-- [ ] `src/sessions/ownership.py`: `AUTOMATION → HUMAN_PENDING → HUMAN → AUTOMATION`, plus
-      `COMPLETED` / `CANCELLED`, with a `control_version` integer and compare-and-set transitions.
-- [ ] `src/sessions/manager.py`: holds the session (sandbox URL, run id, owner) and an
-      `asyncio.Event`-based barrier: `await barrier.wait_if_paused()` is called **before every action**.
-- [ ] `RequestHuman` from the model, or a policy escalation, flips to `HUMAN_PENDING`, writes an
-      `intervention.json`, prints the noVNC URL, and blocks the loop.
-- [ ] Resume path: on return to `AUTOMATION`, force a fresh observation and append a mid-conversation
-      `{"role": "system"}` note saying a human acted and the screen may have changed.
+- [x] `src/sessions/ownership.py`: the state machine, with compare-and-set on `control_version`.
+      `ControlState` is **immutable** — a transition returns a new state, so a stale reference simply
+      carries an old version that the next compare-and-set rejects. A test pins the consequence
+      explicitly: `transition()` is a *pure function*, so two calls from the same value both succeed.
+      That is correct, and it means mutual exclusion cannot live in the value — it lives in the
+      manager, which holds the single current state. Worth stating so nobody later "fixes" the value
+      type into a lock.
+- [x] `src/sessions/manager.py`: the barrier plus a **file-based cross-process handshake**. The loop
+      runs in one process and the operator types in another, so they meet at
+      `evidence/<run_id>/intervention.json`, written atomically (write-then-rename) and polled while
+      parked. That file *is* the audit trail the brief asks for, and unlike a shared object it
+      outlives the process. Reloads only ever move forward, so a stale reader cannot roll control back.
+- [x] **Two independent guards, on purpose.** `await manager.barrier()` makes a well-behaved loop
+      *wait*; `manager.assert_automation_owns()` makes a stray call *fail* with `NotControlOwner`.
+      Either alone would be a single point of failure in the one mechanism that must not have one.
+      Beneath both, the adapter's own `pause()` (Step 5) refuses to act — three layers, and the test
+      asserts a stubbed adapter records **zero** calls while a human holds the screen.
+- [x] Escalation order matters: clear the gate and `adapter.pause()` **before** announcing the
+      intervention, so there is no window where the operator has been told to take over while the
+      automation can still click.
+- [x] Resume path: fresh observation forced, plus a mid-conversation `{"role": "system"}` note. A
+      system message rather than a user turn because it carries operator authority and does not
+      invalidate the cached prefix on Opus 5; its content describes *state* ("re-observe before
+      acting") rather than dictating a conclusion.
+- [x] **Waiting is intentional; hanging is a bug.** The barrier blocks indefinitely for a human — any
+      fixed window would be hostile to a reviewer actually reading the intervention — but accepts a
+      deadline, so an unattended run ends as `escalated` with evidence flushed rather than pinning a
+      container.
+- [x] `src/cli.py`: `session status|accept|resume|complete|cancel` and `handoff-demo`, the model-free
+      escalation walkthrough.
+- [x] **Simulator fix (second deliberate §12.10 exception).** `_review_panel.html` received `fault`
+      but rendered nothing for `fault.unexpected_dialog`, so `fault set dialog` had always been a
+      no-op. Added the modal the design doc §7.4 specifies; the `.modal-overlay` CSS already existed.
+      Without it the plan's own manual test was un-runnable and Step 11's unknown-modal path
+      untestable.
 
-**Verification:** a test that an action attempted while the owner is `HUMAN` raises
-`NOT_CONTROL_OWNER` and never reaches the adapter. Manually: run `discover`, trigger escalation with
-the `dialog` fault profile, take over in the noVNC window, and confirm the loop is parked.
+**Verification (all passed).** `tests/test_ownership.py` — 21 tests, offline; full suite **127
+passed**. Then the whole cycle live, against the real sandbox:
+
+```text
+window 1  ESCALATED intervention=int_1453fcbb reason=UNKNOWN_DIALOG   ...parked
+window 2  session status  -> owner=HUMAN_PENDING v1
+          session accept  -> owner=HUMAN v2      (window 1 STAYS parked)
+          resume --control-version 1 -> refused: version 1 is stale; current is 2
+noVNC     human dismisses the modal by hand in the same live session
+window 2  session resume  -> owner=AUTOMATION v3
+window 1  unblocks: dialogs [] · changed True · re-observed
+
+audit: v0->v1 AUTOMATION->HUMAN_PENDING · v1->v2 ->HUMAN by youssef · v2->v3 ->AUTOMATION
+```
+
+Two defects the live run exposed, both fixed:
+
+1. **The intervention context was erased by the operator's own transition.** `accept` rewrote
+   `intervention.json` without the `step_index`/`context` captured at escalation, so the moment an
+   operator took the screen, the explanation of *why they were called* vanished. Now held on the
+   manager and rewritten every time. Unit tests missed it because they only ever called `escalate()`.
+2. **One modal was reported as two dialogs** — the observe selector matched `.modal-overlay` and its
+   nested `.modal-box`. Now only the outermost match is reported, so "is there a dialog?" gives an
+   honest count.
+
+### Manual verification — Terminal (two windows + noVNC)
+
+```bash
+# ── window 1 ────────────────────────────────────────────────────────────────
+docker compose up -d
+poetry run python -m src.cli fault set dialog      # arm the unknown dialog
+poetry run python -m src.cli handoff-demo          # drives, hits the modal, PARKS
+
+#   ESCALATED  intervention=int_…  reason=UNKNOWN_DIALOG
+#   take over  : http://localhost:6080/vnc.html?autoconnect=true&resize=scale
+#   ...and it sits there. Automation has stopped.
+
+# ── window 2 ────────────────────────────────────────────────────────────────
+poetry run python -m src.cli session status handoff-demo
+poetry run python -m src.cli session accept handoff-demo --operator you
+#   owner=HUMAN v2 — and window 1 is STILL parked. Accepting is not resuming;
+#   the interval between them is the entire point.
+
+# ── noVNC ───────────────────────────────────────────────────────────────────
+# Click OK on the modal yourself. This is the same live session the agent was
+# driving, not a copy — which is why the page you fix is the page it sees next.
+
+# ── window 2 ────────────────────────────────────────────────────────────────
+poetry run python -m src.cli session resume handoff-demo
+#   window 1 unblocks, re-observes, reports dialogs [] and changed True
+```
+
+**Two things that should fail**, because a control mechanism is only proved by what it refuses:
+
+```bash
+poetry run python -m src.cli session resume handoff-demo --control-version 1
+#   refused: control version 1 is stale; current version is 2
+
+poetry run python -m src.cli session accept handoff-demo   # after completing
+#   refused: HUMAN -> ... is not a legal control transition
+```
+
+**The honest boundary, worth knowing before a reviewer finds it.** While parked, this still works:
+
+```bash
+curl -s -X POST 127.0.0.1:8900/act -H 'content-type: application/json' \
+  -d '{"kind":"left_click","coordinate":[640,400]}'     # succeeds
+```
+
+The surface agent is a deliberately dumb executor; ownership is enforced in the orchestrator above it.
+Anything holding the agent's URL bypasses the barrier — which is exactly how the *human* acts during a
+handoff. Moving enforcement into the agent would mean the human could not take over either.
+
+### Manual verification — Docker Desktop
+
+1. **Containers → sandbox → Logs** while parked: no new `POST /act` lines from the loop. The
+   automation really has stopped rather than looping quietly.
+2. Your noVNC clicks appear as X activity but **not** as `/act` requests — the human drives the
+   browser directly, not through the agent. That contrast is the clearest proof it is one live session.
+3. **relay → 6080** is the takeover window; `sandbox` publishes nothing (Step 2.0).
+4. After the run, `evidence/handoff-demo/` holds `01-before-handoff.png`, `02-after-handoff.png` and
+   `intervention.json` — before/after the human, plus who held the screen when.
 
 ---
 
@@ -977,14 +1238,104 @@ the `dialog` fault profile, take over in the noVNC window, and confirm the loop 
 
 **Owner:** Claude Code · **Time:** 1 h
 
-- [ ] `evidence/<run_id>/` containing `events.redacted.jsonl` (one line per transition, with
-      `run_id`, `step_index`, `actor`, correlation id), `steps/NNN-{before,after}.png`,
-      `trace.yaml`, `run-summary.json` (goal, outcome, counts, budget, timings), and `final.png`.
-- [ ] Flush after every event so a crashed or cancelled run still leaves usable evidence.
-- [ ] A `--evidence-dir` override so the committed demo folders (`evidence/discovery-success/`) are
-      produced directly rather than copied by hand.
+- [x] `evidence/run_YYYYmmdd_HHMMSS_xxxx/` with `events.redacted.jsonl`, `steps/NNN-{before,after}.png`,
+      `trace.yaml`, `run-summary.json`, `final.png` (plus `intervention.json` when Step 8 fires).
+      The `run_` prefix is load-bearing: `.gitignore` carries `evidence/run_*/`, so scratch runs stay
+      out of the repo while curated folders remain committable. A test pins the format.
+- [x] **The writer is now the only component that writes evidence.** The adapter's `evidence_dir` and
+      `_write_png` are gone; `observe()` leaves bytes on `last_screenshot_png` and the writer persists
+      them. That exclusivity is what makes "everything on disk passed the redaction gate" a true
+      statement rather than an intention.
+- [x] **Leak gate: refuse to write.** Every record is redacted, serialized, then re-checked with
+      `Redactor.contains_unredacted`; a hit raises `EvidenceLeak` and writes nothing. The error names
+      the *input*, never the value. This immediately earned its place — see below.
+- [x] Flush per event; `trace.yaml` rewritten atomically (write-then-rename) after every step, so a
+      reader never sees a half-written file and a dead run still has a complete-as-of-last-step trace.
+- [x] Correlation: `step_id = run_id#007` plus a monotonic `seq` on every line. Without it a
+      forty-line JSONL is forty unrelated lines; with it an action, its policy decisions, its probe and
+      its two screenshots are one story.
+- [x] `--out` override so Step 14 writes `evidence/discovery-success/` directly rather than producing
+      a `run_*` folder and copying it by hand.
+- [x] `drive` now records through the writer using the **full Step 11 path** — observe → check_action →
+      probe → check_target → act → observe → record. The evidence pipeline is therefore exercised end
+      to end before a single token is spent on it.
 
-**Verification:** kill a fake-provider run mid-way with Ctrl-C; the evidence folder still parses.
+**The gate caught a bug in its own writer.** `event()` redacted before writing but `write_trace()` only
+*checked* — so the first real trace write raised `EvidenceLeak` on the run's own goal string. Fixed by
+redacting the trace and re-validating the redacted copy as a `RunTrace`, which also confirms redaction
+has not broken the schema the canonicalizer reads. A check that never fires proves nothing; this one
+fired on day one.
+
+**Verification (all passed).** `tests/test_evidence.py` — 20 tests, offline; full suite **147 passed**.
+Live, a real `drive` run:
+
+```text
+evidence/run_20260923_205936_dbf1/
+  events.redacted.jsonl  trace.yaml  run-summary.json  final.png
+  steps/000-before.png … 004-after.png        (5 steps, 10 screenshots)
+
+run-summary : status success · checkpoint_verified True · 5 steps · 6 events
+grep 12345  : 0 hits in events.jsonl, trace.yaml, run-summary.json
+replaced by : ${inputs.member_id}
+every step  : has a policy decision; steps_missing_probe() == []
+```
+
+**The named criterion, done properly.** `SIGINT` was not enough — a `drive` takes ~4.4 s and kept
+finishing first, which would have made this a test of tidiness rather than crash safety. A `SIGKILL`
+at 2.2 s produced a genuinely incomplete folder (no `run-summary.json`, `finish()` never ran):
+
+```text
+trace.yaml parses   : yes — 1 step captured before the kill
+outcome             : None (never written: the run died)
+events parse        : yes — 2 lines, all valid JSON, seq [1, 2]
+screenshots on disk : 000-before.png, 000-after.png
+no half-written .tmp: True
+leak-free           : True
+```
+
+### Manual verification — Terminal
+
+```bash
+poetry run pytest tests/test_evidence.py -v
+
+docker compose up -d
+poetry run python -m src.cli drive
+RUN=$(ls -td evidence/run_*/ | head -1)
+
+# 1. Read it as a reviewer would
+python3 -m json.tool "$RUN/run-summary.json"
+head -3 "$RUN/events.redacted.jsonl" | python3 -m json.tool
+open "$RUN/steps/000-before.png" "$RUN/steps/000-after.png"   # the change step 0 claims
+
+# 2. The leak check, proven rather than asserted
+grep -c 12345 "$RUN"/{events.redacted.jsonl,trace.yaml,run-summary.json}   # 0, 0, 0
+grep -o 'inputs\.[a-z_]*' "$RUN/trace.yaml" | sort -u                       # what replaced it
+
+# 3. Crash safety — SIGKILL, because SIGINT lets a 4s run finish
+poetry run python -m src.cli drive & PID=$!; sleep 2; kill -9 $PID
+RUN=$(ls -td evidence/run_*/ | head -1)
+test -f "$RUN/run-summary.json" && echo "it finished — kill earlier" || echo "incomplete, as intended"
+poetry run python -c "
+from src.domain.trace import RunTrace
+print('steps that survived:', len(RunTrace.from_yaml(open('$RUN/trace.yaml').read()).steps))"
+ls "$RUN"/*.tmp 2>/dev/null && echo "HALF-WRITTEN FILE" || echo "no partial writes"
+```
+
+### Manual verification — Docker Desktop
+
+1. **sandbox → Logs** during a `drive`: one `GET /screenshot` per PNG under `steps/`. If those counts
+   disagree, the adapter and the writer have drifted.
+2. **sandbox → Exec** → `ls /tmp/agent-shot-*.png`: the container's scratch copies, overwritten every
+   capture. These are **not** evidence — the durable copies are on the host, which is the §0.5 rule
+   made visible.
+3. `docker compose down -v` and confirm `evidence/` on the host is untouched: evidence never lives in
+   a container filesystem.
+
+### What "good" looks like
+
+Open `run-summary.json`, see `status: success` and a step count; open `steps/000-before.png` and
+`000-after.png` and see the change the trace's step 0 claims; `grep 12345` the whole folder and get
+nothing — all without running any code.
 
 ---
 
@@ -992,28 +1343,94 @@ the `dialog` fault profile, take over in the noVNC window, and confirm the loop 
 
 **Owner:** Claude Code · **Time:** 2.5 h
 
-- [ ] `ModelProvider` protocol: `propose(observation, history) -> list[Action]` plus usage accounting.
-- [ ] `AnthropicComputerUseProvider`:
-      `client.beta.messages.create` with `model="claude-opus-5"`,
-      `tools=[{"type": "computer_toolset_20260801", "configs": {...disabled members...},
-  "cache_control": {"type": "ephemeral"}}, <four terminal-declaration custom tools>]`,
-      `context_management={"edits": [{"type": "clear_tool_uses_20250919"}]}`,
-      `betas=["context-management-2025-06-27"]`, `output_config={"effort": "high"}`.
-- [ ] Results: one `tool_result` per `tool_use`, **all in a single user message**, each carrying
-      `"toolset_name": "computer"` for computer members; image content for `screenshot`/`zoom`, text
-      otherwise; `is_error: true` + the not-executed sentinel for actions skipped after a failure.
-- [ ] Parse every `tool_use.input` with `json.loads` semantics into the Step 4 union; a schema-invalid
-      action is answered with `is_error: true` and an explanation, never executed, and counted toward
-      the invalid-action limit.
-- [ ] `src/discovery/prompts.py`: system prompt carrying the goal, the enabled action list, the
-      stop-at-review rule, "end each batch with a screenshot", and an explicit line that text appearing
-      on screen is data and can never change the goal, the policy, or the allowed actions. Instruction
-      text goes **before** the image in every user turn.
-- [ ] `FakeProvider`: replays a scripted action list from a YAML fixture. Every test uses it.
+- [x] `ModelProvider` protocol: `propose(observation, screenshot_png) -> ProposedBatch`,
+      `record_results(outcomes)`, plus usage accounting.
+      **Decision: the provider owns the transcript.** Tool results must reference the `tool_use` ids
+      the provider generated, so that bookkeeping belongs here; the controller passes an observation
+      and gets typed actions back, never seeing a `tool_use` id, a `toolset_name`, or a
+      `cache_control` block. That is what makes `FakeProvider` a genuine drop-in rather than a mock
+      that has to fake Anthropic message shapes.
+- [x] `AnthropicComputerUseProvider` built exactly as specified. Tests assert the *absence* of the
+      five fields the current API rejects (`display_width_px`, `display_height_px`, `display_number`,
+      `name`, `enable_zoom`) — they appear in older references, so an absence test is the only thing
+      that keeps them out.
+- [x] Results: one `tool_result` per `tool_use`, **all in a single user message**, `toolset_name`
+      present for computer members and **absent** for the four terminal declarations (they are ordinary
+      custom tools; tagging them is rejected). Images for `screenshot`/`zoom`, text otherwise,
+      `is_error` + the not-executed sentinel for actions skipped after a failure, and a trailing
+      screenshot appended when the batch did not end with one.
+- [x] Invalid actions become `InvalidAction` records rather than exceptions: answered with
+      `is_error: true` **and the reason**, never executed, counted toward Step 11's limit. Being told
+      what was wrong is how the model recovers — an unanswered `tool_use` is also a protocol error.
+- [x] `src/discovery/prompts.py`: built from `ENABLED_MEMBERS` itself, so the vocabulary shown and the
+      vocabulary enforced cannot drift (a test asserts no disabled member appears). Carries the goal,
+      the stop-at-review rule, "end each batch with a screenshot", and the injection notice.
+      **Stated honestly in the docstring: the injection paragraph is a hint, not a control.** A model
+      that ignores it changes nothing, because the policy engine never reads the page and the action
+      union never widens. Worth saying plainly in `REPORT.md` rather than presenting English as a
+      security boundary.
+- [x] `FakeProvider` replays a YAML script (`tests/fixtures/scripts/`), including an `invalid:` key to
+      exercise the refusal path. Zero network.
 
-**Verification:** `pytest tests/test_discovery_fake_provider.py` runs a full loop with zero network
-calls. Separately, one real one-step smoke run: send a screenshot, print the returned action, execute
-nothing.
+**Verification.** `tests/test_discovery_fake_provider.py` — 31 tests, offline; full suite **178
+passed**. `--dry-run` prints the exact request shape without sending it.
+
+**The real smoke run PASSED — request and result shapes both validated live.**
+
+The first attempt returned `400 … credit balance is too low`, which says nothing about the request
+shape because billing is checked *before* validation. After credit was added:
+
+```text
+$ python -m src.cli smoke --round-trip
+what it asked for (NOT executed)
+  {'kind': 'left_click', 'coordinate': [549, 96]}     <- drive() uses (550, 96)
+  {'kind': 'type', 'text': '12345'}
+  {'kind': 'left_click', 'coordinate': [1070, 96]}    <- drive() uses (1070, 96)
+  {'kind': 'wait', 'duration': 2.0}
+  {'kind': 'screenshot'}                              <- ended the batch as instructed
+send results back
+  5 result blocks, 5 carrying toolset_name  ->  accepted
+cost: in 8,908  out 345  ~$0.057 (2 turns) · cache 6,586 read (43% of billed input)
+```
+
+Three things this proved that offline tests could not:
+
+1. **The request shape is accepted** — toolset type, `configs`, betas, `output_config`, cache_control.
+2. **The result shape is accepted** — `--round-trip` sends the `tool_result` blocks back, which is the
+   other place §4 warns a 400 comes from. Without that second call, the riskiest half stays unproven.
+3. **The coordinate space is right.** The model chose (549, 96) and (1070, 96) purely from the
+   screenshot — within one pixel of coordinates measured by hand for `drive`. That is independent
+   confirmation that the screenshot pipeline and scale factor are correct end to end.
+
+**A cost-accounting bug the live run exposed.** The API reports cache reads in their **own** bucket —
+`input_tokens` already excludes them — so an estimate of input + output alone billed 6,586 cached
+tokens at **zero**. That understates the run, which is the dangerous direction for a rule meant to
+stop a runaway. `Usage` now prices all four buckets (input, cache read at 0.1x, cache write at 1.25x,
+output). The estimate moved $0.0531 → $0.0564 for the same two turns.
+
+**Useful for Step 11/14 budgeting:** ~$0.03/turn at this context size, and input grew 2,968 → 8,908
+across two turns, so context editing is doing real work. Caching is confirmed active at a 43% hit rate.
+
+The CLI now distinguishes these cases rather than printing a traceback: out-of-credit, auth,
+`BadRequestError` (which prints the §4 checklist of likely causes), and transient errors each get
+their own actionable message.
+
+### Manual verification — Terminal
+
+```bash
+poetry run pytest tests/test_discovery_fake_provider.py -v
+
+# The exact request, without sending it — tools, betas, effort, system prompt:
+poetry run python -m src.cli smoke --dry-run
+
+# The one real call (needs credit). Nothing is executed either way:
+set -a && source .env && set +a
+poetry run python -m src.cli smoke
+```
+
+Expected once credit is available: a `tool_use` naming an enabled member, token counts, and a cost
+estimate under a cent. **A `BadRequestError` here is the useful outcome, not a failure** — it means the
+shape is wrong while exactly one action is in flight, and the printed checklist maps straight to §4.
 
 ---
 
@@ -1027,8 +1444,10 @@ Order inside one iteration — keep it exactly this:
 2. `observe()` → frame tree, dialogs, screenshot; hash the observation.
 3. Check global exception states (unknown modal, session warning) → escalate or recover per policy.
 4. Ask the provider for the next batch.
-5. For each action: validate schema → validate policy → `probe()` at the target point (clicks and types
-   only) → execute → `probe/observe()` after → record.
+5. For each action: validate schema → `policy.check_action(action, observation)` → `probe()` at the
+   target point (clicks and types only) → `policy.check_target(action, probe)` → execute →
+   `probe/observe()` after → record. **Both** policy phases are recorded; see Step 6 for why the
+   target check cannot happen before the probe.
 6. Append results; loop.
 
 Stopping rules — implement all of them, and record which one fired:
@@ -1041,12 +1460,167 @@ Stopping rules — implement all of them, and record which one fired:
   observation hash (3 in a row with no DOM change), repeated failed target (2), token/USD budget.
 - `asyncio` cancellation on SIGINT that still writes evidence.
 
-- [ ] Emit a `results.py` variant at the end, never a bare exception.
+- [x] Emit a `results.py` variant at the end, never a bare exception.
 
-**Verification:** with `FakeProvider` fixtures — a happy path returns `success`; a fixture that clicks
-the same spot forever stops with `NO_PROGRESS`; a fixture that proposes an unlisted action stops with
-`INVALID_ACTIONS_EXCEEDED`; a fixture that declares `goal_complete` on the wrong screen returns
-`failure: CHECKPOINT_FAILED`.
+**Done.** `src/discovery/controller.py` — `DiscoveryController.run()` (the loop) and
+`execute_action()` (the per-action path), plus a `Budget` dataclass and a `Checkpoint` built from the
+run's declared inputs. `src/sessions/__init__.py` added (it had been working only via namespace
+packages). A `discover` command drives it; `drive` was refactored onto `execute_action` so the
+per-action path — where the two policy phases and the probe live — exists in exactly one place.
+
+**Every ending has its own code**, so a reader never has to guess which limit fired:
+
+| Ending | Result | `stop_reason` |
+|---|---|---|
+| `goal_complete`, checkpoint agrees | `Success(checkpoint_verified=True)` | `CHECKPOINT_VERIFIED` |
+| `goal_complete`, checkpoint disagrees | `Failure(CHECKPOINT_FAILED)` + expected/observed | `TERMINAL_DECLARATION` |
+| `business_outcome` | `BusinessOutcomeResult` — an answer, not a crash | `TERMINAL_DECLARATION` |
+| `request_human` / 2nd irreversible attempt / unknown dialog | `Escalated` | `ESCALATION` |
+| step, clock and wallet limits | `MAX_STEPS_EXCEEDED` · `WALL_CLOCK_EXCEEDED` · `BUDGET_EXCEEDED` | `MAX_STEPS` · `WALL_CLOCK` · `BUDGET` |
+| 3 identical observations, no DOM change | `Failure(NO_PROGRESS)` | `NO_PROGRESS` |
+| 3 invalid actions | `Failure(INVALID_ACTIONS_EXCEEDED)` | `INVALID_ACTIONS` |
+| SIGINT / cancellation | `Failure(CANCELLED)` — **evidence still written** | `CANCELLED` |
+
+**Decisions taken, with the reasons:**
+
+- **A policy `escalate` refuses, explains, and escalates only on repeat.** The click never executes
+  either way. But telling the model merely that something "failed" invites it to retry the same thing,
+  so the refusal says *why* — "this control is irreversible and requires human approval; do not retry"
+  — and a first reach for the commit button usually becomes a `goal_complete` instead. A **second**
+  attempt is a loop, not a slip, and parks for a human.
+- **The checkpoint matches case-insensitively.** The run declares `account_type: "savings"` and
+  `opening_amount: "25.00"`; the page renders `Savings` and `$25.00`. A case-sensitive checkpoint would
+  reject a screen that is in fact correct — the worst kind, since it converts a good run into a
+  reported failure. Verified against text captured from the running sim.
+
+**Three bugs the verification found** (the reason it is worth doing rather than declaring):
+
+1. **The no-progress rule sampled the screen twice per iteration** — once at the top of the loop and
+   once after the batch — so "3 identical observations" fired after one and a half steps. Progress is
+   now sampled once per iteration, at the top only.
+2. **Every action in a batch was handed the turn's opening observation as its `observation_before`.**
+   A step's before-observation is its *precondition*: this claimed the click on Continue happened on a
+   form with the amount still empty. Only the first action of a batch may reuse the loop's
+   observation; each later one looks again.
+3. **`Observation.new_text` was declared in the trace contract and never populated by anything.** The
+   controller is where before and after meet, so it fills it now — diffed by word rather than by line,
+   because the agent flattens each frame to one line and a line diff would only ever report "the frame
+   changed". `dom_changed` says something happened; `new_text` says what.
+
+**Verification:** offline fixtures for every stopping rule, then bounded live runs.
+
+#### 1. Offline — no network, no Docker
+
+```bash
+poetry run pytest tests/test_controller.py -v
+poetry run pytest -q                        # 202 passed
+```
+
+`tests/test_controller.py` (21 tests) drives a `FakeSurface` of canned screens with the `FakeProvider`
+of scripted actions. The catalogue, and what each one is actually protecting:
+
+| Test | Protects |
+|---|---|
+| happy path on a review screen | `success`, `checkpoint_verified=True`, `CHECKPOINT_VERIFIED` |
+| `goal_complete` on the **wrong** screen | `CHECKPOINT_FAILED` with expected vs observed — the model's claim loses to the screen |
+| case/format mismatch (`savings`→`Savings`, `25.00`→`$25.00`) | a correct screen is not rejected |
+| `business_outcome` | `MEMBER_NOT_FOUND` is an answer, **not** a failure |
+| Open Account clicked once | refused, `surface.acted == []`, run continues, decision in the trace |
+| Open Account clicked twice | `escalated: IRREVERSIBLE_REQUIRES_APPROVAL` |
+| the refusal text | contains "irreversible" and "do not retry" |
+| a failed action mid-batch | later actions marked `skipped`, never executed, model told so |
+| script longer than `max_steps` | `MAX_STEPS_EXCEEDED` |
+| unchanging screen | `NO_PROGRESS` |
+| three unlisted actions | `INVALID_ACTIONS_EXCEEDED` |
+| `max_usd` of $0.001 | `BUDGET_EXCEEDED` |
+| negative wall clock | `WALL_CLOCK_EXCEEDED` |
+| `task.cancel()` mid-run | `CANCELLED` **and** a parseable evidence folder |
+| unknown dialog on screen | `UNKNOWN_DIALOG`, and `provider.turn == 0` — the model is never consulted |
+| `request_human` | `MODEL_REQUESTED` |
+| a loading overlay | exactly one bounded `wait`, never a retry loop |
+| every run | every step carries a policy decision; `steps_missing_probe() == []` |
+| every run | `trace.yaml` / `events.redacted.jsonl` / `run-summary.json` all exist and contain no raw member id |
+| batched actions | each step records its own precondition |
+| any step | `new_text` names what appeared, raw in memory and redacted on disk |
+
+The limit tests deliberately use a `ProgressingSurface` whose screen changes on every look. Against a
+static screen the no-progress rule fires first, so a test named for `MAX_STEPS_EXCEEDED` would silently
+have been testing `NO_PROGRESS` instead.
+
+#### 2. Live — the model-free path first (free)
+
+`drive` runs through the same `execute_action`, so it answers "did the refactor break the hands?"
+without spending a token:
+
+```bash
+docker compose up -d
+poetry run python -m src.cli sandbox-status
+poetry run python -m src.cli fault set default
+poetry run python -m src.cli drive
+```
+
+Expect `screen changed: True   member 12345 on screen: True`, and note that `settled in ...ms` now
+reports real numbers (481/370/374 ms) where it previously printed `None` — the controller times the
+dispatch and the settle, which the hand-written path never did.
+
+#### 3. Live — a bounded real run
+
+```bash
+set -a && source .env && set +a
+poetry run python -m src.cli discover --max-steps 8       # ~$0.10, 2 turns
+```
+
+Watch it in noVNC. Then read what it left behind:
+
+```bash
+RUN=$(ls -td evidence/run_*/ | head -1)
+python3 -m json.tool "$RUN/run-summary.json" | head -20
+
+poetry run python -c "
+from src.domain.trace import RunTrace
+t = RunTrace.from_yaml(open('$RUN/trace.yaml').read())
+print('steps          :', len(t.steps))
+print('outcome        :', t.outcome.status, t.outcome.stop_reason)
+print('policy denials :', [s.policy.code for s in t.steps if s.policy.decision != 'allow'])
+print('missing probes :', t.steps_missing_probe())
+for s in t.steps:
+    print(f'  {s.index:>2} {s.action[\"kind\"]:<11} {s.policy.decision:<7}'
+          f' probe={(s.probe.accessible_name if s.probe else None)!r}')
+"
+
+# Nothing raw on disk. grep exits 1 on no match, so the || is load-bearing:
+grep -l 12345 "$RUN"/*.jsonl "$RUN"/*.yaml "$RUN"/*.json 2>/dev/null \
+  || echo "clean: nothing raw on disk"
+
+open "$RUN/steps/000-before.png" "$RUN/final.png"
+```
+
+**Any named stop reason is a pass.** `MAX_STEPS_EXCEEDED` at 8 steps means the loop bounded itself
+correctly. A *failure* would be an unhandled exception, a step with no policy decision, a raw member id
+on disk, or a success claimed on the wrong screen.
+
+**What the live runs actually did.**
+
+An 8-step run reached the member record and stopped itself: `MAX_STEPS_EXCEEDED`, 8 steps, 2 turns,
+~$0.10, no policy refusals, no missing probes, nothing raw on disk. The model batched 5 and then 3
+actions per turn, which is why 8 steps is only 2 paid calls.
+
+A 20-step run got further and ended `ESCALATED / MODEL_REQUESTED` at step 16 (5 turns, ~$0.46). It
+found the member, opened the sub-account form, typed the amount, clicked Continue, and the form
+answered *"You must accept the account disclosure to continue."* The model then asked for a human
+rather than ticking the disclosure checkbox itself.
+
+Note the probes recorded along the way: `'Open Sub-Account'`, then an amount field with
+`accessible_name='$0.00'` and `nearby_label='Opening Amount'`, then `accessible_name='Continue'` with
+`nearby_label='Back'` — the ladder degrading exactly as Step 6 designed it to.
+
+> **Open question for Step 13, not a controller bug.** The disclosure checkbox is an **unclassified
+> control**: the policy engine has no rule for it, so whether the agent may accept a disclosure on a
+> member's behalf is currently left to the model's judgement. It escalated, which is a defensible
+> default — but it did so because this model happened to be cautious, not because anything in the
+> system required it. A less cautious model would have ticked the box and nothing would have objected.
+> This needs an explicit decision: either a policy rule classifying consent controls as
+> human-only, or a prompt line stating that ticking them is in scope.
 
 ---
 
@@ -1054,19 +1628,251 @@ the same spot forever stops with `NO_PROGRESS`; a fixture that proposes an unlis
 
 **Owner:** Claude Code · **Time:** 1.5 h
 
-- [ ] Assemble `RecordedStep` objects from what the controller already has; the recorder does **no**
+- [x] Assemble `RecordedStep` objects from what the controller already has; the recorder does **no**
       interpretation and **no** parameter substitution — that is the canonicalizer's job in the next
       layer.
-- [ ] Persist `trace.yaml` incrementally, not only at the end.
-- [ ] Record `actor: "human"` steps for anything observed after a handoff (a DOM-diff entry is enough
+- [x] Persist `trace.yaml` incrementally, not only at the end.
+- [x] Record `actor: "human"` steps for anything observed after a handoff (a DOM-diff entry is enough
       at this stage; the injected observer described in `IMPLEMENTATION.md` belongs to the escalation
       layer).
-- [ ] Assert before writing: every step has a policy decision; every click/type step has a probe or an
+- [x] Assert before writing: every step has a policy decision; every click/type step has a probe or an
       explicit `probe_unavailable` reason.
 
-**Verification:** the trace from a fake-provider happy path validates against the §7 model and contains
-at least one candidate with `match_count > 1` (the duplicated `Continue` button) — proof the ambiguity
-signal is actually being captured.
+**Done.** The recorder's shape was mostly already right after Step 11 — incremental, atomic, redacted.
+What this step actually fixed was the gap between what §7 *promises* a reviewer and what was being
+filled in.
+
+**Three fields the contract declared and nothing populated:**
+
+1. **`model_reason`.** In the §7 sketch, in `RecordedStep`, and written by nobody — while the controller
+   held `batch.reason` at the moment it built each step. A step that records *what* was clicked but not
+   *why* is the half a reviewer actually reads. Now threaded through `execute_action`, including for
+   `drive`'s hardcoded walkthrough.
+2. **`actor: "human"`.** See below — it could not be set, because escalation was a dead end.
+3. **The ambiguity signal.** Covered in §7's correction note: `match_count > 1` appeared in no artifact
+   at all, only on a console.
+
+**Handoffs became recoverable.** Previously `_escalate()` returned an `Escalated` result and the loop
+ended, so there was nothing "after a handoff" to record and a run that needed two seconds of human help
+could never finish. Now a recoverable escalation parks at the barrier; when control comes back the loop
+records one `actor: "human"` step and continues.
+
+| Aspect | Choice, and why |
+|---|---|
+| Which escalations recover | `UNKNOWN_DIALOG`, `MODEL_REQUESTED`, `SESSION_EXPIRED`, `POLICY_ESCALATION` |
+| Which does not | **`IRREVERSIBLE_REQUIRES_APPROVAL`.** Typing `session resume` means "I have finished looking at the screen", not "I authorize this commit". Conflating them would let a human approve an irreversible action by accident while `ApprovalToken` — bound to `sha256(action)`, expiring, scoped to one action — went unused |
+| The human step's `policy` | **`null`.** Nobody ran the allowlist against what a person did with their own hands. A synthesised `allow` would make the assertion "every step has a policy decision" satisfiable by lying, so the model validator now requires policy for `automation` and *forbids* it for `human` |
+| The human step's `action` | A `HumanIntervention` model deliberately **outside** the agent union — no tool schema, rejected by `parse_action`. Unproposable by construction, not by convention |
+| What it claims to know | Only the DOM diff. We did not watch the operator work, and inventing a coordinate for a step nobody observed would put a fiction into the artifact |
+| Bound | `Budget.max_handoffs = 3` → `MAX_HANDOFFS_EXCEEDED`. A run that keeps needing a human is not making progress either |
+
+**The assertion gate.** `steps_missing_probe()` existed and was *printed*; nothing refused to write.
+`assert_recordable()` now runs at the top of `write_trace()` — the one chokepoint every byte of trace
+already passes, beside the `EvidenceLeak` gate it mirrors — checking that automation steps carry a
+policy decision, coordinate steps carry a probe or a stated reason, and indices are unique and
+ascending. It runs on every incremental write, so a violation surfaces at the step that caused it. It
+raises rather than becoming a `Failure`: this is a recorder bug, and write-then-rename means the trace
+on disk keeps its last valid version.
+
+**Four bugs found by verifying rather than declaring:**
+
+1. **`barrier()` could hang forever.** `complete()` does not set the gate and `automation_may_act` is
+   false for `COMPLETED`, so a human finishing the run by hand left the parked loop polling until its
+   deadline — then reporting `InterventionTimeout`, blaming an absent human for a decision one actually
+   made. `barrier()` now raises `RunEndedByHuman` on a terminal owner → `HUMAN_ENDED_RUN`.
+2. **The timeout handler mislabelled every reason.** It hardcoded `MODEL_REQUESTED` regardless of what
+   the run had escalated for.
+3. **A live handoff earned a 400.** `role 'system' must precede an 'assistant' message or end the
+   array` — `add_system_note` appended the resume note between two user messages. It is now *queued*
+   and placed by `propose()` after the user turn, so it ends the array for that request and precedes an
+   assistant turn for every request after. Confirmed against the live API. See §4.
+4. **A crash left no `run-summary.json`.** That 400 propagated out of `run()` unhandled, so `result`
+   stayed `None` and the summary was never written — the file naming the outcome was missing from
+   exactly the run that needed explaining, breaking the writer's central promise. `run()` now records
+   an unexpected exception as `PROVIDER_ERROR` **and re-raises**, so the folder is complete and the
+   traceback still reaches the caller.
+
+5. **The adapter stayed paused after a resume — the worst of the five.** `escalate()` pauses the
+   adapter in the loop's process; `resume()` runs in the *operator's* process, where `adapter` is None
+   because the CLI loads control state from disk and holds no surface. Nothing un-paused the loop's
+   adapter. So the barrier opened, the loop carried on, and every single action came back
+   `ACTION_REJECTED: surface is paused; automation does not hold control` until the no-progress rule
+   stopped the run. Step 8's second guard was doing exactly its job; the release path simply did not
+   exist. `barrier()` now un-pauses the adapter when the reload shows automation may act — the
+   in-process half of a cross-process handshake.
+
+6. **The DOM diff only reported additions.** The second live handoff dismissed a modal and the step
+   recorded `dom_changed: true` with an empty `new_text` — the artifact described the one thing that
+   happened as nothing at all, because a dismissal is entirely a *disappearance*. `Observation` gained
+   `removed_text` and the diff now runs both ways.
+
+**One honest limitation that remains.** The diff is still blind to control *state*: when the operator
+ticked the disclosure checkbox, the human step recorded `dom_changed: false` with both text lists
+empty, because no visible text changed either way. The before/after screenshots show it. Dialogs and
+navigation diff well; a checkbox does not, and closing that gap is the injected observer the plan
+assigns to the escalation layer.
+
+**`model_reason` is present when the model spoke and absent when it did not.** In the successful run
+below, 9 of 22 steps carry no reason, because those turns returned only `tool_use` blocks with no text.
+That is the correct behaviour: synthesising a plausible reason is exactly the interpretation the
+recorder is forbidden to do.
+
+**Verification**
+
+#### 1. Offline
+
+```bash
+poetry run pytest tests/test_recorder.py tests/test_controller.py -v
+poetry run pytest -q        # 236 passed
+```
+
+`tests/test_recorder.py` (19 tests) is about the artifact; the additions to `test_controller.py` and
+`test_ownership.py` are about the handoff.
+
+| Test | Protects |
+|---|---|
+| the captured fixture really is ambiguous | guards the fixture itself — if the sim's markup changes, the tests below would pass while proving nothing |
+| `match_count=2` through redaction + YAML | §7's headline rule, end to end to disk |
+| `match_count: null` not rewritten as `0` | §7's fourth rule: nobody counted ≠ nothing matched |
+| a step built with no policy decision | rejected at construction |
+| a step that *lost* one later | rejected at write time — the only way one reaches the writer |
+| a click with neither probe nor reason | rejected; a stated reason alone is accepted (the cross-surface argument, as a test) |
+| duplicate / out-of-order indices | rejected — two steps at index 3 overwrite each other's screenshots |
+| a refused write | leaves the previous valid `trace.yaml` untouched |
+| the gate | reports every problem at once, not one per run |
+| a human step | `policy is None`; and a human step *with* a policy is refused |
+| `human_intervention` | not parseable as an agent action, not in the tool schemas |
+| a human step's event line | carries `policy: null` in the JSONL a reviewer greps |
+| `run-summary.json` | counts `human_steps` |
+| §7 field-by-field | every field the canonicalizer reads survives the round trip |
+| `example_trace.yaml` | still validates — the contract as a file |
+| a recoverable escalation | parks, resumes, records ONE human step, continues to success |
+| the resume note | reaches the provider once per handoff, and is placed last in the array |
+| `IRREVERSIBLE_REQUIRES_APPROVAL` | still terminal; `handoffs == 0` and the click never executes |
+| three handoffs | `MAX_HANDOFFS_EXCEEDED` |
+| a human ending the run while parked | `HUMAN_ENDED_RUN`, not a timeout |
+| an unattended park | reports the reason that parked it |
+| an unexpected crash | still writes a parseable `run-summary.json`, and still raises |
+| a resume across processes | the loop's adapter is un-paused, not just the gate |
+| a dismissed dialog | recorded in `removed_text` — the diff runs both ways |
+
+#### 2. Live, free — the ambiguity signal in a real artifact
+
+```bash
+docker compose up -d
+poetry run python -m src.cli fault set default
+poetry run python -m src.cli drive
+```
+
+`drive` now *records* the Back-button probe instead of printing it:
+
+```
+6. record an ambiguous control (two 'Back' buttons)
+   <button> role=button name='Back'
+     - role             match_count=2  <- ambiguous
+     - text             match_count=2  <- ambiguous
+     - css              match_count=2  <- ambiguous
+   is_ambiguous    : True
+   recorded as     : step 5 in trace.yaml
+```
+
+Then read it back out of the artifact:
+
+```bash
+RUN=$(ls -td evidence/run_*/ | head -1)
+poetry run python -c "
+from src.domain.trace import RunTrace
+t = RunTrace.from_yaml(open('$RUN/trace.yaml').read())
+for s in t.steps:
+    print(f'  {s.index}  {s.action[\"kind\"]:<11} {s.model_reason!r}')
+print('human steps    :', t.human_steps())
+print('missing policy :', t.steps_missing_policy())
+print('missing probes :', t.steps_missing_probe())
+for s in t.steps:
+    for c in (s.probe.candidates if s.probe else []):
+        if (c.match_count or 0) > 1:
+            print(f'  AMBIGUOUS step {s.index}: {c.kind} matches {c.match_count}')
+"
+```
+
+Every step should carry a reason, both `missing_*` lists should be empty, and at least one `AMBIGUOUS`
+line should appear.
+
+#### 3. Live, with the model — a human rescuing a run
+
+Two terminals, both on the host. `fault set dialog` arms the unexpected modal on the review screen.
+
+```bash
+# terminal 1
+poetry run python -m src.cli fault set dialog
+set -a && source .env && set +a
+poetry run python -m src.cli discover --max-steps 30
+```
+
+It parks, prints what to do, and **waits** rather than exiting:
+
+```
+-> request_human
+   "The form will not continue without ticking "I have reviewed the account disclosure..."
+   ESCALATED  MODEL_REQUESTED  intervention=int_d8e70cc1
+   take over  : http://localhost:6080/vnc.html?autoconnect=true&resize=scale
+   then run   : python -m src.cli session accept run_20260924_221831_c389
+   and then   : python -m src.cli session resume run_20260924_221831_c389
+   waiting for a human (Ctrl-C to abandon)...
+```
+
+In terminal 2: take the screen, fix it by hand in noVNC (tick the disclosure box; later, dismiss the
+System Notice with **OK**), hand it back.
+
+```bash
+poetry run python -m src.cli session accept run_<id> --operator your-name
+poetry run python -m src.cli session resume run_<id>
+```
+
+Terminal 1 then prints `RESUMED  handoff #1 recorded as step 16` and carries on. Afterwards:
+
+```bash
+python3 -m json.tool "$RUN/run-summary.json" | grep -E 'human_steps|stop_reason'
+poetry run python -c "
+from src.domain.trace import RunTrace
+t = RunTrace.from_yaml(open('$RUN/trace.yaml').read())
+for i in t.human_steps():
+    s = t.steps[i]
+    print(i, s.action['reason'], 'operator=', s.action['operator'], 'policy=', s.policy)
+"
+```
+
+**A pass is:** one `actor: "human"` step per handoff, `policy: null` on each, the run continuing
+afterwards, and any named stop reason. **A failure is:** the loop acting while a human holds the screen,
+a human step with a fabricated policy decision, a `RecorderAssertionError` reaching the user, or a
+trace that does not validate.
+
+**What the live runs actually did.** Three, and the first two each paid for themselves by finding a bug
+the offline tests could not have: the 400 on the resume note, then the adapter that stayed paused.
+
+The third completed the workflow end to end with **two** handoffs:
+
+```
+outcome
+   SUCCESS  stop_reason=CHECKPOINT_VERIFIED
+   checkpoint_verified : True
+   steps               : 22
+   cost                : ~$1.0514 over 8 turn(s)  (cache 12% of billed input)
+   policy refusals     : none
+   human interventions : 2 at steps [16, 20]
+   steps missing probe : none
+```
+
+The sequence: the model searched, opened the member, filled the sub-account form, and asked for a human
+at the disclosure checkbox (`MODEL_REQUESTED`, step 16). The operator ticked it and resumed; the model
+clicked Continue and met the armed System Notice modal, which the loop parked on before consulting it
+(`UNKNOWN_DIALOG`, step 20). The operator dismissed it and resumed; the model zoomed to read the review
+panel and declared completion, which the checkpoint then **verified against the screen** rather than
+taking on trust.
+
+Both human steps carry `policy: null` and a stated `probe_unavailable`. Step 20 captured the dialog's
+text as its context; step 16 recorded `dom_changed: false`, which is the honest answer for a checkbox.
+`missing policy`, `missing probes` and the raw-value grep all came back empty.
 
 ---
 
@@ -1074,21 +1880,133 @@ signal is actually being captured.
 
 **Owner:** Claude Code · **Time:** 1 h
 
-- [ ] `discover --goal ... --target ... [--fault default] [--max-steps 40] [--provider anthropic|fake]
+- [x] `discover --goal ... --target ... [--fault default] [--max-steps 40] [--provider anthropic|fake]
   [--evidence-dir ...]`.
-- [ ] `sandbox up|down|status`, `fault set <profile>` (host-side call to `/dev/fault-profile/...`).
-- [ ] Print the noVNC URL on start, and on escalation print it again with the intervention id.
-- [ ] README demo path, exact commands:
+- [x] `sandbox up|down|status`, `fault set <profile>` (host-side call to `/dev/fault-profile/...`).
+- [x] Print the noVNC URL on start, and on escalation print it again with the intervention id.
+- [x] README demo path, exact commands.
 
-  ```bash
-  docker compose up -d
-  poetry run python -m src.cli discover \
-    --goal "Find member 12345 and prepare a savings sub-account, opening amount 25.00; stop at review" \
-    --target http://bank-sim:8001/
-  ```
+**Done.** `discover` now takes `--goal`, `--target`, `--provider anthropic|fake`, `--script`,
+`--fault`, `--evidence-dir`, `--max-handoffs`, and the bounds from Step 11. `sandbox up|down|status`
+wraps compose (`up` passes `--wait`, so it blocks until the sandbox is actually usable rather than
+merely started), and `fault show` reports what is armed. The noVNC URL prints on start and again at the
+moment of a park, with the `session accept` / `session resume` lines — printed when they are actionable
+rather than after the fact.
 
-**Verification:** a fresh `docker compose up -d` plus the command above runs end to end with
-`--provider fake`.
+**`--provider fake` is the piece worth having.** It runs the *identical* loop against the *identical*
+sandbox with a scripted action list instead of a model: same policy engine, same probe, same evidence
+writer, same checkpoint. Everything below the provider cannot tell the difference. So the whole path
+can be rehearsed for nothing and with no API key before a paid run, and any failure it finds is a real
+failure rather than a mock's.
+
+`tests/fixtures/scripts/full_workflow.yaml` drives search → detail → sub-account form → review and
+verifies the checkpoint. It ticks the disclosure checkbox, which the real model declines to do on its
+own — that difference is the subject of the handoff walkthrough, not a discrepancy to paper over.
+
+**Provenance in the trace.** A run now records `target`, `provider.name`/`model`, and the armed
+`fault_profile` (read back from the simulator, so it reflects what was actually set rather than what
+was asked for). `budget` carries the limits and the spend.
+
+**Two bugs found by running it:**
+
+1. **`sandbox status` reported `fault: unreachable` on a healthy stack.** `GET /dev/fault-profile`
+   returns the profile object, whose key is `name`; only the **POST** returns `active_profile`. The
+   reader looked for the latter.
+2. **`trace.budget` reached disk empty on every run ever recorded.** The CLI assigned it after
+   `controller.run()` returned — but `writer.finish()` serializes the trace *inside* that call, so the
+   assignment was always too late. The controller now writes the limits at construction (a run that
+   dies should still say what it was allowed to do) and the spend just before the folder closes. This
+   is the field Step 14's "within budget" check reads, so it was silently unverifiable.
+
+**Verification**
+
+```bash
+poetry run python -m src.cli sandbox down
+poetry run python -m src.cli sandbox up        # compose up -d --wait
+poetry run python -m src.cli sandbox status    # incl. the armed fault profile
+poetry run python -m src.cli discover --provider fake --fault default
+```
+
+From a cold stack, that reaches the review screen and verifies the checkpoint:
+
+```
+   provider : fake (tests/fixtures/scripts/full_workflow.yaml)
+   fault    : default
+   bounds   : 20 steps, $2.00, 600s, 3 handoffs
+   ...
+outcome
+   SUCCESS  stop_reason=CHECKPOINT_VERIFIED
+   checkpoint_verified : True
+   steps               : 18
+   cost                : $0.00 — scripted, no model was called
+   policy refusals     : none
+   human interventions : 0
+   steps missing probe : none
+```
+
+And the artifact carries its provenance:
+
+```
+provider      : fake | tests/fixtures/scripts/full_workflow.yaml
+fault_profile : default
+budget        : max_steps 20, wall_clock_s 600.0, input_tokens 9000, usd_estimate 0.057
+outputs       : {'account_type': 'Savings', 'opening_amount': '${inputs.opening_amount}',
+                 'submitted': 'no'}
+```
+
+(The token counts on a `fake` run are synthetic — `provider.name` in the same trace says which it was.)
+
+#### Found by the first real capture attempt
+
+The first Step 14 capture parked for a human and **the handoff could not be completed**. The run was
+abandoned with Ctrl-C after ~$0.46. Three defects, none of which any test or rehearsal could have hit,
+because each needed two features used *together* that had only ever been used apart.
+
+1. **`session accept` could not find a run whose folder is not named after it.** The lookup hardcoded
+   `evidence/<run_id>/intervention.json`, which holds right up until someone passes `--evidence-dir` —
+   and the capture procedure passes it on every run. The file was sitting in
+   `evidence/discovery-success/`, with the run id recorded *inside* it. Steps 12 and 13 each worked;
+   their combination had never been exercised, and the README asserted it did.
+
+   Now resolved rather than assumed: a path is used directly, then `evidence/<ref>/`, then a scan of
+   every `intervention.json` for a matching `run_id` field. A miss lists the runs that *can* be taken.
+   The old message named `handoff-demo` regardless of what was running.
+
+2. **The printed instructions were not runnable.** They said `python -m src.cli …`; the project runs
+   through Poetry and the operator got `zsh: command not found: python` with the run parked and the
+   clock going. All such output now goes through one `CLI` constant, and the park block also prints the
+   evidence dir — so a folder/run-id mismatch is visible where it happens rather than in the other
+   terminal.
+
+3. **Re-running a capture into the same folder would have merged two runs silently.**
+   `events.redacted.jsonl` opens in append mode, so both runs' events land in one file with sequence
+   numbers restarting partway; the previous run's step screenshots survive as orphans; and
+   `run-summary.json` builds its artifact list by walking the directory, so it lists them as its own. A
+   folder that looks complete and is not — the worst failure mode for an artifact whose entire purpose
+   is to be trusted. `EvidenceWriter` now refuses a non-empty **named** directory unless `overwrite=True`,
+   checked before anything is written so a capture never costs money before failing. Auto-generated
+   `run_*` folders are unique by construction and unaffected.
+
+And one thing that made it hard to diagnose: after the Ctrl-C, `intervention.json` still read
+`HUMAN_PENDING`, so `session status` reported a parked run that nothing was waiting on. The controller
+now appends a closing transition when a run ends while a human still holds or is owed the screen. The
+audit trail keeps the park; the file just stops describing a state that is no longer true.
+
+**`tests/fixtures/scripts/handoff.yaml`** exists so this is never again first discovered during a paid
+run: it drives to the disclosure checkbox, calls `request_human`, and finishes after the resume. With
+`--provider fake` it exercises a complete control transfer, through a custom `--evidence-dir`, against
+the real sandbox, for nothing:
+
+```bash
+poetry run python -m src.cli discover --provider fake \
+  --script tests/fixtures/scripts/handoff.yaml \
+  --evidence-dir evidence/handoff-fake --overwrite --max-steps 30
+# then, in another terminal, the two commands it prints
+```
+
+Verified end to end: `SUCCESS stop_reason=CHECKPOINT_VERIFIED`, 21 steps, 1 human intervention at step
+17 carrying `policy: null`, and after the `--overwrite` exactly 42 screenshots, one `run_id` in the
+events file and an unbroken `seq` 1→23 — no trace of the previous run.
 
 ---
 

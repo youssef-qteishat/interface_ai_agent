@@ -1,0 +1,74 @@
+{
+  "intervention_id": "int_167ae293",
+  "reason": "UNKNOWN_DIALOG",
+  "step_index": 20,
+  "context": "\u26a0 System Notice An unexpected condition was detected. Please contact your system administrator. Reference: ERR-APP_13 OK",
+  "novnc_url": "http://localhost:6080/vnc.html?autoconnect=true&resize=scale",
+  "run_id": "run_20260925_013816_266d",
+  "owner": "AUTOMATION",
+  "control_version": 6,
+  "operator": "you",
+  "updated_at": "2026-09-25T01:40:24+00:00",
+  "transitions": [
+    {
+      "at": "2026-09-25T01:39:09+00:00",
+      "from": "AUTOMATION",
+      "to": "HUMAN_PENDING",
+      "from_version": 0,
+      "to_version": 1,
+      "operator": null,
+      "reason": "MODEL_REQUESTED",
+      "detail": null
+    },
+    {
+      "at": "2026-09-25T01:39:24+00:00",
+      "from": "HUMAN_PENDING",
+      "to": "HUMAN",
+      "from_version": 1,
+      "to_version": 2,
+      "operator": "you",
+      "reason": null,
+      "detail": null
+    },
+    {
+      "at": "2026-09-25T01:39:40+00:00",
+      "from": "HUMAN",
+      "to": "AUTOMATION",
+      "from_version": 2,
+      "to_version": 3,
+      "operator": null,
+      "reason": null,
+      "detail": null
+    },
+    {
+      "at": "2026-09-25T01:39:52+00:00",
+      "from": "AUTOMATION",
+      "to": "HUMAN_PENDING",
+      "from_version": 3,
+      "to_version": 4,
+      "operator": null,
+      "reason": "UNKNOWN_DIALOG",
+      "detail": null
+    },
+    {
+      "at": "2026-09-25T01:40:06+00:00",
+      "from": "HUMAN_PENDING",
+      "to": "HUMAN",
+      "from_version": 4,
+      "to_version": 5,
+      "operator": "you",
+      "reason": null,
+      "detail": null
+    },
+    {
+      "at": "2026-09-25T01:40:24+00:00",
+      "from": "HUMAN",
+      "to": "AUTOMATION",
+      "from_version": 5,
+      "to_version": 6,
+      "operator": null,
+      "reason": null,
+      "detail": null
+    }
+  ]
+}

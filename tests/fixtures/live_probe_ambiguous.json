@@ -1,0 +1,62 @@
+{
+    "coordinate": [
+        233,
+        239
+    ],
+    "frame_path": [
+        "servicing-frame"
+    ],
+    "role": "button",
+    "role_source": "ax_tree",
+    "accessible_name": "Back",
+    "accessible_name_source": "visible_text",
+    "tag": "button",
+    "hit_tag": "button",
+    "retargeted_from": null,
+    "role_hint": "button",
+    "name_hint": "Back",
+    "type": null,
+    "name_attr": null,
+    "dom_id": null,
+    "dom_id_stability": null,
+    "visible_text": "Back",
+    "nearby_label": null,
+    "placeholder": null,
+    "title": null,
+    "value": "",
+    "disabled": false,
+    "visible": true,
+    "enclosing_region": "fieldset",
+    "enclosing_region_label": "Identity",
+    "classes": [
+        "nav-button"
+    ],
+    "rect": {
+        "x": 31,
+        "y": 183,
+        "width": 66,
+        "height": 25
+    },
+    "candidates": [
+        {
+            "kind": "role",
+            "role": "button",
+            "name": "Back",
+            "name_source": "visible_text",
+            "match_count": 2
+        },
+        {
+            "kind": "text",
+            "tag": "button",
+            "text": "Back",
+            "match_count": 2
+        },
+        {
+            "kind": "css",
+            "selector": "button.nav-button",
+            "match_count": 2,
+            "stability": "unverified"
+        }
+    ],
+    "element_fingerprint": "sha256:bfc4cb60409341503a48fb94f77511cb35fb3c4df5aa70c8f306315550364c80"
+}

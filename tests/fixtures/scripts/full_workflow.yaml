@@ -1,0 +1,56 @@
+# The whole workflow, model-free: search -> member detail -> sub-account form -> review.
+#
+# This is what `discover --provider fake` replays. It exists so the entire loop — policy,
+# probe, evidence, checkpoint — can be rehearsed end to end against the real simulator
+# for nothing, before any of it is asked to work under a model that charges per step.
+#
+# Coordinates are the same hardcoded ones `drive` uses (src/cli.py). Discovering them is
+# the model's job; asserting the plumbing is this file's.
+#
+# Note it ticks the disclosure checkbox, which the real model declines to do on its own —
+# it asks for a human instead. That difference is the point of the handoff walkthrough,
+# not a discrepancy to fix here.
+
+- reason: "reset to the search page via the app's own nav"
+  actions:
+    - { kind: left_click, coordinate: [46, 58] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "enter the member id and search"
+  actions:
+    - { kind: left_click, coordinate: [550, 96] }
+    - { kind: type, text: "12345" }
+    - { kind: key, text: "Return" }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "open the result row to reach Member Detail"
+  actions:
+    - { kind: left_click, coordinate: [360, 148] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "start a sub-account for this member"
+  actions:
+    - { kind: left_click, coordinate: [757, 215] }
+    - { kind: wait, duration: 1.5 }
+    - { kind: screenshot }
+
+- reason: "fill the opening amount, accept the disclosure, continue to review"
+  actions:
+    - { kind: left_click, coordinate: [739, 124] }
+    - { kind: type, text: "25.00" }
+    - { kind: left_click, coordinate: [197, 181] }
+    - { kind: left_click, coordinate: [695, 212] }
+    - { kind: wait, duration: 2.0 }
+    - { kind: screenshot }
+
+- reason: "the review screen is up; stop here without submitting"
+  actions:
+    - kind: goal_complete
+      summary: "Reached the review screen for a savings sub-account; did not submit."
+      outputs:
+        account_type: "Savings"
+        opening_amount: "25.00"
+        submitted: "no"

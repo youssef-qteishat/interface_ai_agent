@@ -49,8 +49,13 @@ class FailureCode(StrEnum):
     NO_PROGRESS = "NO_PROGRESS"
     INVALID_ACTIONS_EXCEEDED = "INVALID_ACTIONS_EXCEEDED"
     REPEATED_TARGET_FAILURE = "REPEATED_TARGET_FAILURE"
+    # A run that keeps needing a human is not making progress either, and a handoff
+    # loop would otherwise be bounded only by the wall clock.
+    MAX_HANDOFFS_EXCEEDED = "MAX_HANDOFFS_EXCEEDED"
     # Control and policy
     NOT_CONTROL_OWNER = "NOT_CONTROL_OWNER"
+    # A human finished or abandoned the run by hand while the loop was parked.
+    HUMAN_ENDED_RUN = "HUMAN_ENDED_RUN"
     POLICY_DENIED = "POLICY_DENIED"
     ROUTE_NOT_ALLOWED = "ROUTE_NOT_ALLOWED"
     # Environment
@@ -79,6 +84,8 @@ class StopReason(StrEnum):
     NO_PROGRESS = "NO_PROGRESS"
     INVALID_ACTIONS = "INVALID_ACTIONS"
     ESCALATION = "ESCALATION"
+    MAX_HANDOFFS = "MAX_HANDOFFS"
+    HUMAN_ENDED_RUN = "HUMAN_ENDED_RUN"
     CANCELLED = "CANCELLED"
     PROVIDER_ERROR = "PROVIDER_ERROR"
 

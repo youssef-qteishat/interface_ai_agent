@@ -4,6 +4,29 @@
     Your session will expire in 5 minutes. Please save your work.
   </div>
   {% endif %}
+
+  {#
+    Unexpected dialog (fault profile: dialog). Deliberately NOT in the capability
+    artifact's known dialogs — the replay engine cannot resolve it, which is what
+    forces an escalation to a human. The reference code is random so it cannot be
+    matched on, and the wording gives no instruction an automation could follow.
+  #}
+  {% if fault.unexpected_dialog %}
+  <div class="modal-overlay" id="modal_unknown_{{ app.app_id[:8] }}">
+    <div class="modal-box">
+      <h4>⚠ System Notice</h4>
+      <p>
+        An unexpected condition was detected. Please contact your system
+        administrator.
+      </p>
+      <p>Reference: ERR-{{ app.app_id[:6] | upper }}</p>
+      <button class="modal-button" id="modal_dismiss_{{ app.app_id[:8] }}"
+              onclick="this.closest('.modal-overlay').remove()">
+        OK
+      </button>
+    </div>
+  </div>
+  {% endif %}
   <h3>Review New Account</h3>
 
   <table class="review-table">

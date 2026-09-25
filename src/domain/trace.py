@@ -245,6 +245,11 @@ class Observation(_Model):
     # Only meaningful on an "after" observation.
     dom_changed: bool | None = None
     new_text: list[str] = Field(default_factory=list)
+    # The other half of the diff. Added in Step 12 after a live handoff recorded
+    # `dom_changed: true` with an empty `new_text`: the human had DISMISSED a dialog, so
+    # the whole event was a disappearance and an additions-only diff described it as
+    # nothing at all.
+    removed_text: list[str] = Field(default_factory=list)
 
     @property
     def frame_urls(self) -> list[str]:
@@ -258,8 +263,13 @@ class Observation(_Model):
 
 
 class PolicyDecision(_Model):
-    """Recorded for every action, allowed or denied. A step without one is a bug the
-    recorder refuses to write (Step 12)."""
+    """Recorded for every action the automation took, allowed or denied. An automation
+    step without one is a bug the recorder refuses to write (Step 12).
+
+    A `human` step carries `policy: null` instead. That is not an omission: nobody ran
+    the allowlist against what an operator did with their own hands, and synthesising an
+    `allow` here would make the recorder's assertion satisfiable by a lie.
+    """
 
     decision: Literal["allow", "deny", "escalate"]
     risk: Literal["read_only", "reversible", "consequential", "irreversible"]
@@ -278,9 +288,12 @@ class RecordedStep(_Model):
     actor: Literal["automation", "human"] = "automation"
     action: dict[str, Any] = Field(
         ...,
-        description="The action as executed, dumped from the src.domain.actions union.",
+        description=(
+            "The action as executed, dumped from the src.domain.actions union — or a "
+            "HumanIntervention, which is deliberately outside that union."
+        ),
     )
-    policy: PolicyDecision
+    policy: PolicyDecision | None = None
 
     observation_before: Observation | None = None
     probe: ProbeResult | None = None
@@ -300,6 +313,17 @@ class RecordedStep(_Model):
     def _probe_xor_reason(self) -> RecordedStep:
         if self.probe is not None and self.probe_unavailable is not None:
             raise ValueError("a step has either a probe or a probe_unavailable reason, not both")
+        return self
+
+    @model_validator(mode="after")
+    def _policy_required_for_automation(self) -> RecordedStep:
+        """Required where it means something, absent where it would be fiction."""
+        if self.actor == "automation" and self.policy is None:
+            raise ValueError("an automation step must carry a policy decision")
+        if self.actor == "human" and self.policy is not None:
+            raise ValueError(
+                "a human step must not carry a policy decision — nothing evaluated it"
+            )
         return self
 
     def requires_probe(self) -> bool:
@@ -373,3 +397,17 @@ class RunTrace(_Model):
             for s in self.steps
             if s.requires_probe() and s.probe is None and s.probe_unavailable is None
         ]
+
+    def steps_missing_policy(self) -> list[int]:
+        """Indices of automation steps with no policy decision.
+
+        The model validator already refuses to construct one, so this is the second
+        line: it catches a step mutated after construction, which is the only way such a
+        step can reach the writer.
+        """
+        return [s.index for s in self.steps if s.actor == "automation" and s.policy is None]
+
+    def human_steps(self) -> list[int]:
+        """Indices of steps a person is responsible for. `run-summary.json` reports the
+        count, because "was a human involved?" is the first thing a reviewer asks."""
+        return [s.index for s in self.steps if s.actor == "human"]
