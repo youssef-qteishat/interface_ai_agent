@@ -142,7 +142,12 @@ class ProbeResult(_Model):
     test of this module.
     """
 
-    coordinate: tuple[int, int]
+    # Optional because a probe from a surface with no pointer has no coordinate. Replay resolves a
+    # locator rather than aiming at a point, and still needs a `ProbeResult` so `check_target` can
+    # classify the element it is about to act on — requiring a coordinate would mean inventing one and
+    # recording it in evidence as though a cursor had been there. Nothing reads this field: the
+    # artifact's `discovery_coordinate` comes from the action, not the probe.
+    coordinate: tuple[int, int] | None = None
     frame_path: list[str] = Field(
         default_factory=list,
         description="Frame names from the main document down, e.g. ['servicing-frame'].",

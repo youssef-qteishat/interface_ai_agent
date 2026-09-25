@@ -656,6 +656,379 @@ FAKE_SCRIPT = Path("tests/fixtures/scripts/full_workflow.yaml")
 
 
 @app.command()
+def replay(
+    artifact_path: Path = typer.Argument(..., help="A capability artifact."),
+    base_url: str = typer.Option(
+        "http://127.0.0.1:8001",
+        help="Where the app actually is. The artifact's origin is rebound onto this.",
+    ),
+    smoke: bool = typer.Option(
+        False, "--smoke", help="Open the entry screen, confirm the frame, and stop."
+    ),
+    probe: bool = typer.Option(
+        False, "--probe", help="Walk the steps, resolve each target, report which candidate won."
+    ),
+    input: list[str] = typer.Option(
+        [], "--input", help="An artifact input, as key=value. Repeatable.", show_default=False
+    ),
+    fault: str | None = typer.Option(
+        None, help="Arm a fault profile first: default | overlay | dialog | session | tenant_b."
+    ),
+    evidence_dir: Path | None = typer.Option(
+        None, help="Write the run here instead of evidence/<run_id>/."
+    ),
+    overwrite: bool = typer.Option(False, help="Replace --evidence-dir if it already holds a run."),
+    max_steps: int = typer.Option(50, help="Hard stop."),
+    wall_clock_s: float = typer.Option(300.0, help="Stop after this many seconds."),
+    headed: bool = typer.Option(False, help="Show the browser. Needed for the escalation handoff."),
+) -> None:
+    """Execute a capability artifact. No model, at any point.
+
+    Needs only the simulator — `docker compose up -d bank-sim`. Replay does not use the sandbox: that
+    exists to contain a model, and there is no model here.
+
+    `--smoke` opens the entry screen and stops; `--probe` resolves every target; with neither, the whole
+    artifact runs.
+    """
+    from src.domain.artifact import load_artifact
+    from src.surfaces.playwright_web import BaseUrlRebind, ReplaySurface
+
+    capability = load_artifact(artifact_path)
+
+    if not capability.is_replayable:
+        # The artifact refuses itself before a browser is ever launched.
+        typer.secho("\nartifact is not replayable:", fg=typer.colors.RED, bold=True)
+        for line in capability.why_not_replayable():
+            typer.echo("   " + line)
+        raise typer.Exit(1)
+
+    # Inputs are validated against the contract BEFORE a browser exists. A bad member id should cost
+    # nothing — not a container, not a page load, not a second of anyone's attention.
+    supplied = dict(pair.split("=", 1) for pair in input if "=" in pair)
+    if not (smoke or probe):
+        try:
+            values = _validate_inputs(capability, supplied)
+        except ValueError as exc:
+            typer.secho(f"\ninput rejected: {exc}", fg=typer.colors.RED, bold=True)
+            raise typer.Exit(2) from exc
+
+    if fault:
+        fault_set(fault)
+
+    rebind = BaseUrlRebind.for_capability(capability, base_url)
+
+    async def _run() -> None:
+        _echo_header("artifact")
+        typer.echo(f"   {capability.capability.id} v{capability.capability.version}")
+        typer.echo(f"   steps    : {len(capability.steps)}")
+        typer.echo(f"   rebind   : {rebind.describe()}")
+        typer.echo(f"   origins  : {list(rebind.policy_origins)}  <- what policy checks")
+
+        async with ReplaySurface(rebind, headed=headed) as surface:
+            _echo_header("entry")
+            await surface.goto(capability.entry.url)
+            observation = await surface.observe(capability.entry.frame_path)
+
+            inner = next((f.url for f in observation.frames if f.path), None)
+            typer.echo(f"   frame    : {capability.entry.frame_path} -> {inner}")
+            typer.echo(f"   headings : {observation.headings}")
+
+            expected = capability.entry.expect_url_contains
+            if expected and expected not in (inner or ""):
+                typer.secho(
+                    f"\n   entry check FAILED: expected {expected!r} in {inner!r}",
+                    fg=typer.colors.RED, bold=True,
+                )
+                raise typer.Exit(1)
+            typer.secho(f"\n   entry check ok: {expected!r} reached inside the frame",
+                        fg=typer.colors.GREEN)
+
+            if probe:
+                await _probe_targets(surface, capability)
+            elif not smoke:
+                await _replay_run(
+                    surface, capability, values, rebind,
+                    evidence_dir=evidence_dir, overwrite=overwrite,
+                    fault=fault, max_steps=max_steps, wall_clock_s=wall_clock_s,
+                )
+
+    _run_or_exit(_run())
+
+
+def _validate_inputs(capability: Any, supplied: dict[str, str]) -> dict[str, str]:
+    """Check every declared input against its `InputSpec`, and refuse extras.
+
+    Refusing an undeclared input matters as much as validating a declared one: a typo'd `--input
+    acount_type=savings` would otherwise leave `account_type` missing and the run would fail somewhere
+    much further in, with a message about a dropdown.
+    """
+    import re as _re
+
+    declared = capability.contract.inputs
+    if extra := sorted(set(supplied) - set(declared)):
+        raise ValueError(f"not declared by this artifact: {', '.join(extra)}")
+    if missing := sorted(set(declared) - set(supplied)):
+        raise ValueError(f"missing required input(s): {', '.join(missing)}")
+
+    for name, spec in declared.items():
+        value = supplied[name]
+        if spec.pattern and not _re.fullmatch(spec.pattern, value):
+            raise ValueError(f"{name}={value!r} does not match {spec.pattern}")
+        if spec.values and value not in spec.values:
+            raise ValueError(f"{name}={value!r} is not one of {spec.values}")
+        if spec.type in {"decimal", "integer"}:
+            try:
+                number = float(value)
+            except ValueError as exc:
+                raise ValueError(f"{name}={value!r} is not a number") from exc
+            if spec.minimum is not None and number < spec.minimum:
+                raise ValueError(f"{name}={value!r} is below the minimum {spec.minimum}")
+    return supplied
+
+
+async def _replay_run(
+    surface: Any,
+    capability: Any,
+    values: dict[str, str],
+    rebind: Any,
+    *,
+    evidence_dir: Path | None,
+    overwrite: bool,
+    fault: str | None,
+    max_steps: int,
+    wall_clock_s: float,
+) -> None:
+    """Run the artifact through the engine, and report what happened."""
+    from src.domain.trace import Budget, Display, ProviderInfo, RunTrace
+    from src.evidence.writer import EvidenceWriter
+    from src.policy.engine import PolicyEngine
+    from src.policy.redaction import Redactor
+    from src.replay.engine import REPLAY_ACTION_KINDS, Bounds, ReplayEngine
+    from src.sessions.manager import SessionManager
+
+    # Only the sensitive ones. Redacting a non-sensitive value would make the trace unreadable for no
+    # gain — `savings` appearing in the trace is not a disclosure.
+    sensitive = {
+        name: values[name]
+        for name, spec in capability.contract.inputs.items()
+        if spec.sensitive and name in values
+    }
+
+    with EvidenceWriter(
+        evidence_dir=evidence_dir, overwrite=overwrite, redactor=Redactor(sensitive)
+    ) as writer:
+        trace = RunTrace(
+            run_id=writer.run_id,
+            goal=f"replay {capability.capability.id} v{capability.capability.version}",
+            target=rebind.runtime_origin,
+            display=Display(width=1280, height=800),
+            # The zero-model claim, as data in the run summary rather than a sentence in a README.
+            provider=ProviderInfo(name="none", model="none (replay executes a reviewed artifact)"),
+            fault_profile=fault or _active_fault_profile(),
+            budget=Budget(max_steps=max_steps, wall_clock_s=wall_clock_s),
+        )
+
+        _echo_header("run")
+        typer.echo(f"   run      : {writer.run_id}")
+        typer.echo(f"   evidence : {writer.dir}")
+        typer.echo(f"   inputs   : {sorted(values)}  ({len(sensitive)} redacted in evidence)")
+        typer.echo(f"   fault    : {trace.fault_profile}")
+        typer.echo(f"   provider : none — no model is called at any point")
+
+        manager = SessionManager(writer.run_id, evidence_dir=writer.dir, adapter=surface)
+        engine = ReplayEngine(
+            surface=surface,
+            policy=PolicyEngine(
+                run_id=writer.run_id,
+                allowed_origins=rebind.policy_origins,
+                declared_inputs=values,
+                # The artifact's vocabulary, through the parameter the engine already exposes. The gate
+                # still fires — on anything that is not one of these five.
+                allowed_action_kinds=REPLAY_ACTION_KINDS,
+            ),
+            writer=writer,
+            trace=trace,
+            capability=capability,
+            inputs=values,
+            session=manager,
+            bounds=Bounds(max_steps=max_steps, wall_clock_s=wall_clock_s),
+            on_event=_event_printer(writer.run_id, writer.dir),
+        )
+
+        result = await engine.run()
+
+    _echo_header("outcome")
+    colour = {
+        "success": typer.colors.GREEN,
+        "business_outcome": typer.colors.CYAN,
+        "escalated": typer.colors.YELLOW,
+    }.get(result.status, typer.colors.RED)
+    typer.secho(f"   {result.status.upper()}  stop_reason={result.stop_reason}", fg=colour, bold=True)
+    for field in ("code", "reason", "intervention_id", "checkpoint_verified", "step_index"):
+        value = getattr(result, field, None)
+        if value is not None:
+            typer.echo(f"   {field:<20}: {value}")
+    for field in ("expected", "observed"):
+        if value := getattr(result, field, None):
+            typer.echo(f"   {field:<20}: {value}")
+    if outputs := getattr(result, "outputs", None):
+        typer.echo("   outputs")
+        for name, payload in outputs.items():
+            typer.echo(f"     {name}: {payload}")
+
+    typer.echo(f"   steps               : {len(trace.steps)}")
+    typer.echo(f"   cost                : $0.00 — no model was called")
+    denied = [s.policy.code for s in trace.steps if s.policy and s.policy.decision != "allow"]
+    typer.echo(f"   policy refusals     : {denied or 'none'}")
+    typer.secho(f"\n   evidence: {writer.dir}", fg=typer.colors.GREEN)
+
+    if result.status == "escalated":
+        typer.echo(f"   then run   : {CLI} session accept {writer.run_id}")
+
+
+async def _probe_targets(surface: Any, capability: Any) -> None:
+    """Resolve every step's target, reporting which candidate won.
+
+    Walks forward by *executing* each step, because a target only exists on the screen its step
+    belongs to — there is no way to resolve the Continue button without first filling the form that
+    carries it. Values come from the artifact's own example inputs, so this stays a diagnostic rather
+    than a half-built replay: Step 9 owns the real loop, with policy, conditions and evidence.
+    """
+    from src.replay.conditions import wait_for
+    from src.replay.locator_resolver import TargetResolutionError, resolve
+
+    example = {"member_id": "23456", "account_type": "savings", "opening_amount": "50.00"}
+    _echo_header("resolve")
+
+    entry_frame = capability.entry.frame_path
+
+    for step in capability.steps:
+        target = getattr(step.action, "target", None)
+        locator = None
+        frame_path = target.frame_path if target else entry_frame
+
+        if target is None:
+            # `verify-outcome` reads the screen rather than touching a control. It still has a
+            # checkpoint, and a checkpoint nobody evaluates is the one assertion that matters most.
+            typer.echo(f"   {step.id:<22} (no target)")
+        else:
+            try:
+                locator, attempts = await resolve(surface, target)
+            except TargetResolutionError as exc:
+                typer.secho(
+                    f"   {step.id:<22} {type(exc).__name__}: {exc}", fg=typer.colors.RED, bold=True
+                )
+                typer.secho(exc.diagnostics(), fg=typer.colors.BRIGHT_BLACK)
+                raise typer.Exit(1) from exc
+
+            won = attempts[-1]
+            colour = typer.colors.GREEN if won.kind == target.candidates[0].kind else typer.colors.YELLOW
+            typer.secho(f"   {step.id:<22} {won.kind:<16} {won.how}", fg=colour)
+            for earlier in attempts[:-1]:
+                # A fallback that nobody observes is not a fallback.
+                typer.secho(f"     fell through: {earlier}", fg=typer.colors.BRIGHT_BLACK)
+
+        before = await surface.observe(frame_path)
+        if target is not None:
+            await _advance(surface, step, locator, example)
+
+        # The artifact's *assertions*, not just its locators. A step whose postconditions do not hold has
+        # not been replayed, however cleanly its target resolved.
+        checks = list(step.postconditions) + (step.checkpoint.all if step.checkpoint else [])
+        if checks:
+            passed, results = await wait_for(
+                surface,
+                frame_path,
+                checks,
+                locator=locator,
+                inputs=example,
+                named_dialogs=capability.named_dialogs,
+                timeout_ms=step.timeout_ms,
+                baseline=before,
+            )
+            for result in results:
+                typer.secho(
+                    f"     {'ok  ' if result.passed else 'FAIL'} {result}",
+                    fg=typer.colors.BRIGHT_BLACK if result.passed else typer.colors.RED,
+                )
+            if not passed:
+                raise typer.Exit(1)
+
+
+async def _advance(surface: Any, step: Any, locator: Any, example: dict[str, str]) -> None:
+    """Execute one step, just far enough to reach the next screen."""
+    from src.domain.artifact import substitute
+
+    kind = step.action.kind
+    value = getattr(step.action, "value", None)
+    if value:
+        # `substitute` rather than an inline regex with a `.get(name, "")` default: an unsupplied input
+        # used to become an empty string, which types nothing into a field and then fails somewhere else.
+        value = substitute(value, example)
+
+    if kind == "click":
+        await surface.click(locator)
+    elif kind == "fill":
+        await surface.fill(locator, value)
+    elif kind == "select":
+        await surface.select(locator, value)
+    elif kind == "check":
+        await surface.check(locator)
+
+
+
+
+
+@app.command()
+def canonicalize(
+    trace_path: Path = typer.Argument(..., help="A trace.yaml from an evidence folder."),
+    out: Path | None = typer.Option(None, help="Write the artifact here."),
+    report: bool = typer.Option(False, "--report", help="Print the gaps and stop."),
+    overwrite: bool = typer.Option(False, help="Replace --out if it already exists."),
+) -> None:
+    """Turn a discovery trace into a capability artifact.
+
+    Derives the procedure — steps, targets, postconditions, outcome rules, gaps. The *contract* (input
+    types, output extractors, the capability's name and risk) comes from a spec, because deriving a
+    public API from one observed run is overfitting.
+    """
+    from src.discovery.canonicalizer import CanonicalizationError, canonicalize as _canonicalize
+    from src.domain.trace import RunTrace
+    from src.discovery.specs import OPEN_SUBACCOUNT
+
+    trace = RunTrace.from_yaml(Path(trace_path).read_text(encoding="utf-8"))
+    try:
+        capability = _canonicalize(trace, OPEN_SUBACCOUNT)
+    except CanonicalizationError as exc:
+        typer.secho(f"\ncannot canonicalize: {exc}", fg=typer.colors.RED, bold=True)
+        raise typer.Exit(1) from exc
+
+    _echo_header("reduction")
+    typer.echo(f"   {len(trace.steps)} trace steps -> {len(capability.steps)} artifact steps")
+    for step in capability.steps:
+        typer.echo(f"     {step.id:<24} {step.action.kind}")
+
+    _echo_header("gaps")
+    if capability.is_replayable:
+        typer.secho("   none — this artifact is replayable as derived", fg=typer.colors.GREEN)
+    else:
+        # The same text `replay` prints when it refuses. One formatter, not two.
+        for line in capability.why_not_replayable():
+            typer.secho("   " + line, fg=typer.colors.YELLOW)
+
+    if report:
+        return
+
+    if out is not None:
+        if out.exists() and not overwrite:
+            typer.secho(f"\n{out} exists; pass --overwrite", fg=typer.colors.RED)
+            raise typer.Exit(1)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(capability.to_yaml(), encoding="utf-8")
+        typer.secho(f"\n   wrote {out}", fg=typer.colors.GREEN)
+
+
+@app.command()
 def discover(
     goal: str | None = typer.Option(
         None, help="What to accomplish. Default: built from the declared inputs below."

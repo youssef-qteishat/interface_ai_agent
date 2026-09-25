@@ -22,6 +22,14 @@ evidence/run_*/
 
 evidence/handoff-demo/
 
+evidence/replay-dialog/
+
+evidence/replay-member-not-found/
+
+evidence/replay-recovery/
+
+evidence/replay-success/
+
 docker-compose.override.yml
 
 *.log

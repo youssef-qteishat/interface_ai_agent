@@ -1,0 +1,361 @@
+schema_version: 1.1.0
+capability:
+  id: corebank.open_subaccount_review
+  version: 1.0.1
+  title: Prepare a new sub-account for review
+  risk: reversible
+contract:
+  inputs:
+    member_id:
+      type: string
+      pattern: ^[0-9]{5}$
+      sensitive: true
+    account_type:
+      type: enum
+      values:
+      - savings
+      - checking
+      sensitive: false
+    opening_amount:
+      type: decimal
+      minimum: 0.0
+      sensitive: false
+  outputs:
+    review:
+      type: object
+      properties:
+        member:
+          type: string
+          sensitive: true
+        account_type:
+          type: string
+        opening_amount:
+          type: decimal
+        funding_source:
+          type: string
+          sensitive: true
+      extract:
+        scope:
+          kind: css
+          selector: '#review-container table.review-table'
+          stability: unverified
+        fields:
+          member:
+            row_label: 'Member:'
+            transform: mask_member_id
+          account_type:
+            row_label: 'Account Type:'
+          opening_amount:
+            row_label: 'Opening Amount:'
+            transform: strip_currency
+          funding_source:
+            row_label: 'Funding Source:'
+policy:
+  allowed_origins:
+  - http://bank-sim:8001
+  forbidden_actions:
+  - submit_irreversible
+  - navigate_external
+  - download
+  - upload
+entry:
+  url: http://bank-sim:8001/
+  frame_path:
+  - servicing-frame
+  expect_url_contains: /servicing/members/search
+steps:
+- id: member-id
+  action:
+    kind: fill
+    value: ${inputs.member_id}
+    target:
+      frame_path:
+      - servicing-frame
+      candidates:
+      - match_count: 1
+        kind: contextual_text
+        anchor: Member ID
+        relative: input
+      - match_count: 1
+        kind: attribute
+        selector: input[name="member_id"]
+        attribute: name
+        value: member_id
+      - match_count: 1
+        kind: css
+        selector: table.form-table > tbody > tr > td:nth-of-type(2) > input
+        stability: unverified
+      evidence:
+        discovery_coordinate:
+        - 549
+        - 96
+        expected_tag: input
+        expected_role: textbox
+        rejected:
+        - kind: dom_id
+          value: inp_7676796a
+          reason: 'dom_id_stability: generated — a new id is issued on every request'
+  preconditions: []
+  postconditions:
+  - kind: value
+    equals: ${inputs.member_id}
+  timeout_ms: 5000
+- id: search
+  action:
+    kind: click
+    target:
+      frame_path:
+      - servicing-frame
+      candidates:
+      - match_count: 1
+        kind: role
+        role: button
+        name: Search
+        name_source: visible_text
+      - match_count: 1
+        kind: contextual_text
+        anchor: Member ID
+        relative: button
+      - match_count: 1
+        kind: text
+        tag: button
+        text: Search
+      - match_count: 1
+        kind: css
+        selector: table.form-table > tbody > tr > td:nth-of-type(3) > button
+        stability: unverified
+      evidence:
+        discovery_coordinate:
+        - 1069
+        - 96
+        expected_tag: button
+        expected_role: button
+        rejected: []
+  preconditions: []
+  postconditions: []
+  timeout_ms: 5000
+- id: results-panel
+  action:
+    kind: click
+    target:
+      frame_path:
+      - servicing-frame
+      candidates:
+      - match_count: 1
+        kind: css
+        selector: '#results-panel table.data-table > tbody > tr.member-row'
+        stability: unverified
+      evidence:
+        discovery_coordinate:
+        - 500
+        - 148
+        expected_tag: tr
+        expected_role: cell
+        rejected:
+        - kind: role
+          value: cell/${inputs.member_id}
+          reason: 'match_count: null — not counted, so it cannot be relied on to be unique'
+  preconditions: []
+  postconditions:
+  - contains: /servicing/members/${inputs.member_id}
+    any_of: []
+    kind: url
+  - contains: Member Detail — ${inputs.member_id}
+    any_of: []
+    kind: heading
+  timeout_ms: 5000
+- id: open-sub-account
+  action:
+    kind: click
+    target:
+      frame_path:
+      - servicing-frame
+      candidates:
+      - match_count: 1
+        kind: role
+        role: button
+        name: Open Sub-Account
+        name_source: visible_text
+      - match_count: 1
+        kind: text
+        tag: button
+        text: Open Sub-Account
+      - match_count: 1
+        kind: css
+        selector: a > button.action-button
+        stability: unverified
+      evidence:
+        discovery_coordinate:
+        - 756
+        - 215
+        expected_tag: button
+        expected_role: button
+        rejected: []
+  preconditions: []
+  postconditions:
+  - contains: /servicing/accounts/open?member_id=${inputs.member_id}
+    any_of: []
+    kind: url
+  - contains: Open Sub-Account
+    any_of: []
+    kind: heading
+  timeout_ms: 5000
+- id: opening-amount
+  action:
+    kind: fill
+    value: ${inputs.opening_amount}
+    target:
+      frame_path:
+      - servicing-frame
+      candidates:
+      - match_count: 1
+        kind: contextual_text
+        anchor: Opening Amount
+        relative: input
+      - match_count: 1
+        kind: attribute
+        selector: input[name="opening_amount"]
+        attribute: name
+        value: opening_amount
+      - match_count: 1
+        kind: css
+        selector: '#open-account-form table.form-table > tbody > tr:nth-of-type(2) > td:nth-of-type(2)
+          > input'
+        stability: unverified
+      evidence:
+        discovery_coordinate:
+        - 738
+        - 124
+        expected_tag: input
+        expected_role: textbox
+        rejected:
+        - kind: role
+          value: textbox/$0.00
+          reason: 'accessible_name_source: placeholder — the name is a formatting hint, not an identity,
+            and matches any element displaying the same one'
+        - kind: dom_id
+          value: amt_d955786b
+          reason: 'dom_id_stability: generated — a new id is issued on every request'
+  preconditions: []
+  postconditions:
+  - kind: value
+    equals: ${inputs.opening_amount}
+  timeout_ms: 5000
+- id: continue
+  action:
+    kind: click
+    target:
+      frame_path:
+      - servicing-frame
+      candidates:
+      - match_count: 1
+        kind: role
+        role: button
+        name: Continue
+        name_source: visible_text
+      - match_count: 1
+        kind: contextual_text
+        anchor: Back
+        relative: button
+      - match_count: 1
+        kind: text
+        tag: button
+        text: Continue
+      - match_count: 1
+        kind: css
+        selector: '#open-account-form table.form-table > tbody > tr:nth-of-type(5) > td.right-align:nth-of-type(2)
+          > button.action-button'
+        stability: unverified
+      evidence:
+        discovery_coordinate:
+        - 694
+        - 212
+        expected_tag: button
+        expected_role: button
+        rejected: []
+  preconditions: []
+  postconditions:
+  - contains: You must accept the account disclosure to continue.
+    any_of: []
+    kind: text_absent
+  timeout_ms: 5000
+- id: verify-outcome
+  action:
+    kind: read
+  preconditions: []
+  postconditions: []
+  checkpoint:
+    all:
+    - contains: Review New Account
+      any_of: []
+      kind: heading
+    - contains: ${inputs.account_type}
+      any_of: []
+      within: '#review-container table.review-table'
+      kind: text
+    - contains: ${inputs.member_id}
+      any_of: []
+      within: '#review-container table.review-table'
+      kind: text
+    - contains: ${inputs.opening_amount}
+      any_of: []
+      within: '#review-container table.review-table'
+      kind: text
+  timeout_ms: 5000
+outcome_rules:
+- when:
+    contains: You must accept the account disclosure to continue.
+    any_of: []
+    kind: text
+  return:
+    status: business_outcome
+    code: VALIDATION_REJECTED
+- when:
+    kind: dialog
+    contains: System Notice
+    unmatched: false
+  recover:
+    strategy: dismiss
+    max_attempts: 1
+    backoff_ms: 500
+  else:
+    status: escalated
+    reason: UNKNOWN_DIALOG
+- when:
+    contains: No members found
+    any_of: []
+    kind: text
+  return:
+    status: business_outcome
+    code: MEMBER_NOT_FOUND
+- when:
+    kind: overlay
+    present: true
+  recover:
+    strategy: wait_and_retry
+    max_attempts: 4
+    backoff_ms: 500
+- when:
+    kind: dialog
+    unmatched: true
+  return:
+    status: escalated
+    reason: UNKNOWN_DIALOG
+gaps:
+- step_after: opening-amount
+  detected_from:
+    trace_step: 13
+    human_step: 16
+    evidence: You must accept the account disclosure to continue.
+  reason: A human intervened and no observable state changed, so the action they took could not be derived.
+    The message that preceded the intervention names the control.
+- detected_from:
+    evidence: no step enters account_type; the run never set it, so a default was accepted
+  reason: account_type is a declared input that no step enters. Replay with a different value would silently
+    use whatever the form defaults to, and fail only at the checkpoint. The authored step's position must
+    be chosen by hand.
+provenance:
+  source_run_id: run_20260925_013816_266d
+  discovered_at: '2026-09-25T01:38:16+00:00'
+  model: anthropic/claude-opus-5
+  fault_profile: dialog

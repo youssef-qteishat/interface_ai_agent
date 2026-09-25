@@ -16,7 +16,11 @@ dependencies = [
     "httpx (>=0.28.1,<0.29.0)",
     "pydantic (>=2)",
     "pyyaml (>=6.0.3,<7.0.0)",
-    "typer (>=0.27.2,<0.28.0)"
+    "typer (>=0.27.2,<0.28.0)",
+    # Replay only. Discovery drives pixels through the sandbox; replay drives roles and
+    # labels through a browser-native driver, and Playwright's actionability checks are
+    # the determinism argument rather than an implementation detail.
+    "playwright (>=1.48)"
 ]
 
 
@@ -37,9 +41,14 @@ pytest-asyncio = ">=0.24"
 # directories), so put the repo root on sys.path for `import src.domain...`.
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-q"
+# Offline by default: a fresh clone with no Docker must still get a green suite.
+# `pytest -m integration` opts into the ones that need `docker compose up -d bank-sim`.
+addopts = "-q -m 'not integration'"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
+# Browser tests are opt-in: `pytest` stays offline and fast, `pytest -m integration`
+# runs the ones that need `docker compose up -d bank-sim`.
+markers = ["integration: needs a running bank-sim on 127.0.0.1:8001"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
