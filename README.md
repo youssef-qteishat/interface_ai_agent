@@ -61,7 +61,7 @@ poetry run python -m src.cli sandbox up     # docker compose up -d --wait
 docker compose ps
 ```
 
-`--wait` matters: it blocks until the sandbox reports *healthy*, not merely *started*. A `discover` fired
+`--wait` matters: it blocks until the sandbox reports _healthy_, not merely _started_. A `discover` fired
 at a container that is up but whose Chromium has not finished launching fails for a reason that has
 nothing to do with what you were testing.
 
@@ -100,7 +100,7 @@ open "http://localhost:6080/vnc.html?autoconnect=true&resize=scale"
 ```
 
 The servicing portal at 1280x800, no address bar, the workflow inside an iframe. Click around — this is a
-real session you *share* with the agent, which is what makes the handoff genuine.
+real session you _share_ with the agent, which is what makes the handoff genuine.
 
 > `resize=scale` fits the window without touching the remote display. Never use `resize=remote`: it
 > resizes the X display itself and invalidates every coordinate in a trace.
@@ -109,7 +109,7 @@ real session you *share* with the agent, which is what makes the handoff genuine
 
 Member search → member detail → open sub-account → review. Seeded members include `12345`
 (John Martinez) and `23456` (Sarah Chen); `88888` is unseeded and exercises the not-found path. `99999` is
-a trap — despite being named `Test, NotFound` it *is* seeded.
+a trap — despite being named `Test, NotFound` it _is_ seeded.
 
 It is deliberately hostile: the workflow is in an iframe, element ids are regenerated every request,
 labels carry no `for=` attribute, two buttons share the label "Back", and one control is icon-only with no
@@ -126,13 +126,13 @@ poetry run python -m src.cli fault set overlay    # default | overlay | dialog |
 poetry run python -m src.cli fault show
 ```
 
-| Profile    | Effect                                  | Used by                                       |
-| ---------- | --------------------------------------- | --------------------------------------------- |
-| `default`  | none                                    | The happy path, discovery and replay          |
-| `overlay`  | 1200 ms loading overlay                 | Replay run 3 — bounded wait and retry         |
-| `dialog`   | unexpected modal after review loads     | Discovery's second handoff; replay run 4       |
-| `session`  | session-expiry warning banner           | Reauthentication escalation                   |
-| `tenant_b` | different theme, "Continue" → "Proceed" | Cross-tenant replay via locator fallback      |
+| Profile    | Effect                                  | Used by                                  |
+| ---------- | --------------------------------------- | ---------------------------------------- |
+| `default`  | none                                    | The happy path, discovery and replay     |
+| `overlay`  | 1200 ms loading overlay                 | Replay run 3 — bounded wait and retry    |
+| `dialog`   | unexpected modal after review loads     | Discovery's second handoff; replay run 4 |
+| `session`  | session-expiry warning banner           | Reauthentication escalation              |
+| `tenant_b` | different theme, "Continue" → "Proceed" | Cross-tenant replay via locator fallback |
 
 ---
 
@@ -141,11 +141,11 @@ poetry run python -m src.cli fault show
 Three layers, in order. Discovery costs about **$0.30–1.10** and needs a human at the keyboard for the
 handoffs; the other two are free and unattended.
 
-| | | Cost | Model | Produces |
-| --- | --- | --- | --- | --- |
-| **A** | [Discover](#a-discovery) | ~$0.30–1.10 | Opus 5 drives | `evidence/<name>/trace.yaml` |
-| **B** | [Canonicalize](#b-canonicalization) | free | none | `artifacts/<name>.yaml` |
-| **C** | [Replay](#c-replay) | free | none | `evidence/replay-*/` |
+|       |                                     | Cost        | Model         | Produces                     |
+| ----- | ----------------------------------- | ----------- | ------------- | ---------------------------- |
+| **A** | [Discover](#a-discovery)            | ~$0.30–1.10 | Opus 5 drives | `evidence/<name>/trace.yaml` |
+| **B** | [Canonicalize](#b-canonicalization) | free        | none          | `artifacts/<name>.yaml`      |
+| **C** | [Replay](#c-replay)                 | free        | none          | `evidence/replay-*/`         |
 
 Before spending anything, run the free rehearsals in [TESTING.md](TESTING.md#free-rehearsals). Each rules
 out a class of failure that would otherwise waste a paid run — and if the scripted loop does not end
@@ -179,11 +179,12 @@ poetry run python -m src.cli discover \
   --fault dialog \
   --member-id 12345 --account-type savings --opening-amount 25.00 \
   --max-steps 30 --max-usd 2.00 \
-  --evidence-dir evidence/discovery-success
+  --evidence-dir evidence/discovery-success \
+  --overwrite
 ```
 
 `--evidence-dir` is what makes it a keeper: `evidence/run_*/` is gitignored and a named folder is not.
-Name it for what the run *demonstrates* — `discovery-success`, `handoff-unknown-dialog` — not for when it
+Name it for what the run _demonstrates_ — `discovery-success`, `handoff-unknown-dialog` — not for when it
 happened. If the folder already holds a run the command refuses **before** doing anything, so a capture
 never costs money before failing; pass `--overwrite` to replace it.
 
@@ -200,7 +201,7 @@ Watch it in noVNC. The output is live:
 ### Take control when it asks
 
 The run reaches the sub-account form, types the amount, clicks Continue, and meets the form's own
-validation: *"You must accept the account disclosure to continue."* The model **asks for a human** rather
+validation: _"You must accept the account disclosure to continue."_ The model **asks for a human** rather
 than ticking the disclosure checkbox itself, and the run **parks** rather than ending:
 
 ```
@@ -236,7 +237,7 @@ not making progress either, and stops with `MAX_HANDOFFS_EXCEEDED`.
 
 > **The run id is not the folder name**, and does not need to be. `session accept` takes the run id and
 > finds the folder by reading the `run_id` recorded inside each `intervention.json`. Mistype it and the
-> error lists every run you *can* take.
+> error lists every run you _can_ take.
 
 ### What a good capture looks like
 
@@ -283,17 +284,17 @@ A **capability** is what should happen every time, in terms replay can resolve.
 
 **21 recorded steps become 7:**
 
-| Removed | Why |
-| ------- | --- |
-| 7 `wait` / `screenshot` steps | The model asked for those to see where it was. Replay waits on conditions, never on a clock |
+| Removed                          | Why                                                                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 7 `wait` / `screenshot` steps    | The model asked for those to see where it was. Replay waits on conditions, never on a clock                                                                                                            |
 | A rejected attempt and its retry | Trace steps 13 and 17 are the same click — the app refused the first. The artifact gets **one** step, and keeps the refusal as a `text_absent` postcondition so the same failure would be caught again |
-| Two human steps | Neither is a step. One becomes a recovery rule; the other becomes a **gap** |
+| Two human steps                  | Neither is a step. One becomes a recovery rule; the other becomes a **gap**                                                                                                                            |
 
 Coordinates survive only under `evidence.discovery_coordinate`, to explain where a locator came from.
 Replay resolves roles, labels and attributes — never a pixel.
 
 > **What is derived and what is not.** Steps, targets, postconditions, entry, origins, provenance and gaps
-> come from the trace. Input *types*, output extractors, and the capability's name and risk come from
+> come from the trace. Input _types_, output extractors, and the capability's name and risk come from
 > `src/discovery/specs.py` — deriving a public API from one observed run is overfitting. Nothing in that
 > trace says a member id is always five digits.
 
@@ -363,17 +364,17 @@ workflow rather than a fallback.
     value: ${inputs.account_type}
     target:
       frame_path:
-      - servicing-frame
+        - servicing-frame
       candidates:
-      - match_count: 1
-        kind: attribute
-        selector: select[name="account_type"]
-        attribute: name
-        value: account_type
-      - match_count: 1
-        kind: contextual_text
-        anchor: Account Type
-        relative: select
+        - match_count: 1
+          kind: attribute
+          selector: select[name="account_type"]
+          attribute: name
+          value: account_type
+        - match_count: 1
+          kind: contextual_text
+          anchor: Account Type
+          relative: select
   preconditions: []
   postconditions: []
   timeout_ms: 5000
@@ -388,21 +389,21 @@ workflow rather than a fallback.
     kind: check
     target:
       frame_path:
-      - servicing-frame
+        - servicing-frame
       candidates:
-      - match_count: 1
-        kind: attribute
-        selector: input[name="disclosure_accepted"]
-        attribute: name
-        value: disclosure_accepted
-      - match_count: 1
-        kind: label
-        text: I have reviewed the account disclosure and agree to the terms.
-        control: checkbox
+        - match_count: 1
+          kind: attribute
+          selector: input[name="disclosure_accepted"]
+          attribute: name
+          value: disclosure_accepted
+        - match_count: 1
+          kind: label
+          text: I have reviewed the account disclosure and agree to the terms.
+          control: checkbox
   preconditions: []
   postconditions:
-  - kind: checked
-    equals: true
+    - kind: checked
+      equals: true
   timeout_ms: 5000
   authored_by: human
 ```
@@ -418,11 +419,11 @@ Add `resolved_by: human` to each entry under `gaps:`:
 
 ```yaml
 gaps:
-- step_after: opening-amount
-  reason: A human intervened and no observable state changed ...
-  resolved_by: human          # <- add
-- reason: account_type is a declared input that no step enters ...
-  resolved_by: human          # <- add
+  - step_after: opening-amount
+    reason: A human intervened and no observable state changed ...
+    resolved_by: human # <- add
+  - reason: account_type is a declared input that no step enters ...
+    resolved_by: human # <- add
 ```
 
 Two different fields, on purpose. `authored_by` marks the **step** a human wrote; `resolved_by` marks the
@@ -495,7 +496,7 @@ entry
 ```
 
 The rebind is the one thing in this layer that can disable a safety control without anything appearing to
-go wrong. The artifact records `http://bank-sim:8001` — the hostname the *agent* saw inside the sandbox
+go wrong. The artifact records `http://bank-sim:8001` — the hostname the _agent_ saw inside the sandbox
 network — and replay runs on the host. It maps **one origin to one origin**, and `origins` shows what the
 policy engine actually gets: the runtime origin and nothing else. Allowing both, or passing an empty
 allowlist, would leave the origin check running and no longer checking.
@@ -564,7 +565,7 @@ outcome
    steps               : 2
 ```
 
-Two steps, then it stops. `88888` is unseeded; the artifact's outcome rule matches *"No members found"*
+Two steps, then it stops. `88888` is unseeded; the artifact's outcome rule matches _"No members found"_
 and returns a business outcome rather than walking the rest of a form that cannot be filled.
 
 #### 3. A bounded recovery
@@ -610,7 +611,7 @@ dismissal stops working. So replay clears it unattended where discovery needed a
 
 A dialog the artifact does **not** name is never dismissed — it escalates as `UNKNOWN_DIALOG`, because
 clicking an unidentified modal away might be clicking `Confirm`. The rule is declared in the artifact
-*and* enforced in code. It has no live trigger today, since the simulator has exactly one dialog and the
+_and_ enforced in code. It has no live trigger today, since the simulator has exactly one dialog and the
 artifact now knows it; see [TESTING.md](TESTING.md#one-path-with-no-live-coverage).
 
 ### Confirming no model was involved
